@@ -1,0 +1,7 @@
+{
+  "name": "knotbase",
+  "private": true,
+  "scripts": {
+    "start": "./dev.sh"
+  }
+}

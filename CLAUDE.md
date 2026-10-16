@@ -5,11 +5,11 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 ## Layout
 - `backend/`: Rust + Axum + SQLite, Cargo conventions. One file per resource in `backend/src/`.
 - `frontend/`: Svelte 5 + Vite + `@xyflow/svelte`, Vite/Svelte conventions.
-- No root workspace, no root `package.json`. Repo root holds `dev.sh`, README, this file, `docs/` and CI.
+- No root workspace. The root `package.json` only holds `npm start` (runs `dev.sh`); it has no dependencies. Repo root also holds `dev.sh`, README, this file, `docs/` and CI.
 
 ## Run, test, build
 - Setup (once): `cd frontend && npm ci`
-- Dev: `./dev.sh` (Vite :5173 proxies `/api` to Rust :3000), open http://localhost:5173.
+- Dev: `npm start` from the repo root, same as `./dev.sh` (Vite :5173 proxies `/api` to Rust :3000), open http://localhost:5173.
 - Backend (in `backend/`): `cargo run`, `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
 - Frontend (in `frontend/`): `npm run dev`, `npm run build` (`svelte-check` then `vite build`; the only frontend gate, and all CI runs). `npm run check` also type-checks `vite.config.ts`, which CI does not.
 - Prod: `cd frontend && npm run build`, then `cd backend && cargo run --release`, open http://localhost:3000.
