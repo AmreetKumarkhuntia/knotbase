@@ -1,7 +1,8 @@
 import type { ApiNode } from '$lib/services/api'
 
-// The whole frontend-to-backend contract: one entry per event, mirroring the API table in CLAUDE.md.
-// get:* events fill the data store and resolve to nothing; writes resolve to what the UI needs next.
+// The whole frontend contract: one entry per event. Data events mirror the API table in CLAUDE.md; get:* events fill the
+// data store and resolve to nothing; writes resolve to what the UI needs next. Navigation and UI actions ride the same bus,
+// so one place decides where things go and telemetry sees everything.
 export type System = { node: ApiNode; doc: string; inside: ApiNode[] }
 export type Move = { id: number; x: number; y: number }
 
@@ -21,4 +22,8 @@ export type Events = {
   'patch:item': { payload: { id: number; node_id: number; done: boolean }; result: boolean }
   'delete:item': { payload: { id: number; node_id: number }; result: boolean }
   'post:system': { payload: { name: string; desc: string }; result: number | undefined }
+  'nav:to': { payload: { path: string; replace?: boolean }; result: void }
+  'nav:node': { payload: { id: number | null }; result: void } // null or 1 is Home
+  'nav:home': { payload: Record<string, never>; result: void }
+  'theme:toggle': { payload: Record<string, never>; result: void }
 }

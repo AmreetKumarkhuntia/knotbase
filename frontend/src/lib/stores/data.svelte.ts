@@ -90,11 +90,12 @@ export const data = {
   setSystems: (s: System[]) => {
     systemList = s
   },
+  // a deleted node keeps a status so that a page still showing it never fetches it again (ids are never reused)
   drop(id: number) {
     nodes.delete(id)
     graphs.delete(id)
-    status.delete(`node:${id}`)
-    status.delete(`graph:${id}`)
+    status.set(`node:${id}`, { error: 'deleted' })
+    status.set(`graph:${id}`, { error: 'deleted' })
   },
   // after a mutation: re-run the gets for the keys that are on screen (a key nobody has read is fetched on its first read anyway)
   async refresh(...keys: Key[]) {

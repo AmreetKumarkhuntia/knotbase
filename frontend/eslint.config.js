@@ -37,6 +37,34 @@ export default ts.config(
       ],
     },
   },
+  // navigation and the theme are events too: only lib/services calls navigate() or toggleTheme(); App and the layout may read the stores
+  {
+    files: ['src/lib/components/**', 'src/lib/widgets/**', 'src/lib/stores/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['$lib/services/*', '**/services/*'],
+              allowTypeImports: true,
+              message: 'Read from $lib/stores/data and emit on $lib/events/bus; only lib/services calls the API.',
+            },
+            {
+              group: [
+                '$lib/stores/router.svelte',
+                '$lib/stores/theme.svelte',
+                '**/stores/router.svelte',
+                '**/stores/theme.svelte',
+              ],
+              allowTypeImports: true,
+              message: 'Emit nav:* or theme:* events; only lib/services navigates or toggles the theme.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // not SvelteKit: there is no $app/paths resolve() for hrefs
   { rules: { 'svelte/no-navigation-without-resolve': 'off', 'svelte/valid-prop-names-in-kit-pages': 'off' } },
 )

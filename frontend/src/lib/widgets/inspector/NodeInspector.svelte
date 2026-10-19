@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { navigate } from '$lib/stores/router.svelte'
+  import { bus } from '$lib/events/bus'
   import { useLevel } from '$lib/stores/level.svelte'
   import { data } from '$lib/stores/data.svelte'
   import { plural } from '$lib/utils/format'
@@ -36,10 +36,10 @@
       <NodeActions {id} parentId={summary.parent_id} name={summary.name} {meta} {isLevel} />
     </Head>
     {#if detail && children}
-      <!-- shortcut: picking a child of a selected card opens the card rather than selecting the child inside it; carry the child id through navigate() when wanted. -->
+      <!-- shortcut: picking a child of a selected card opens the card rather than selecting the child inside it; carry the child id in the nav:node payload when wanted. -->
       <InsideSection
         nodes={children.nodes}
-        onPick={(cid) => (isLevel ? level.select({ type: 'node', id: cid }) : navigate(`/node/${id}`))}
+        onPick={(cid) => (isLevel ? level.select({ type: 'node', id: cid }) : bus.emit('nav:node', { id }))}
       />
       <DocSection {id} doc={detail.doc} />
       <ItemsSection {id} items={detail.items} />

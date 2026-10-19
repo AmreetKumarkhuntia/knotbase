@@ -1,6 +1,5 @@
 <script lang="ts">
   import { bus } from '$lib/events/bus'
-  import { navigate } from '$lib/stores/router.svelte'
   import { data } from '$lib/stores/data.svelte'
   import type { System } from '$lib/events/types'
   import SystemCard from '$lib/components/SystemCard.svelte'
@@ -17,7 +16,7 @@
 
   async function create(name: string, desc: string) {
     const id = await bus.emit('post:system', { name, desc })
-    if (id) navigate(`/node/${id}`)
+    if (id) bus.emit('nav:node', { id })
     return !!id
   }
 </script>

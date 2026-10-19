@@ -1,6 +1,5 @@
 <script lang="ts">
   import { bus } from '$lib/events/bus'
-  import { navigate } from '$lib/stores/router.svelte'
   import { useLevel } from '$lib/stores/level.svelte'
   import { focus } from '$lib/utils/form.svelte'
   import Button from '$lib/components/Button.svelte'
@@ -27,9 +26,9 @@
   // Decide before awaiting: the refresh inside the handler can clear the selection and re-key this inspector to the level.
   async function remove() {
     const atLevel = isLevel
-    const up = level.node?.breadcrumb.at(-2)
+    const up = level.node?.breadcrumb.at(-2)?.id ?? null
     if (!(await bus.emit('delete:node', { id, parent_id: parentId ?? 1 }))) return
-    if (atLevel) navigate(up && up.id !== 1 ? `/node/` : '/')
+    if (atLevel) bus.emit('nav:node', { id: up })
     else level.select(null)
   }
 </script>
@@ -56,7 +55,7 @@
 {:else}
   <div class="row">
     {#if !isLevel}
-      <Button variant="primary" onclick={() => navigate(`/node/${id}`)}>Open {name}<Icon name="arrow" /></Button>
+      <Button variant="primary" onclick={() => bus.emit('nav:node', { id })}>Open {name}<Icon name="arrow" /></Button>
     {/if}
     <Button
       onclick={() => {

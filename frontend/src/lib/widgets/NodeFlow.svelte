@@ -18,7 +18,6 @@
   import Icon from '$lib/components/Icon.svelte'
   import SelectionSync from './SelectionSync.svelte'
   import { bus } from '$lib/events/bus'
-  import { navigate } from '$lib/stores/router.svelte'
   import { useLevel } from '$lib/stores/level.svelte'
   import '$lib/styles/xyflow.css'
 
@@ -105,7 +104,7 @@
       })
     }}
     onnodeclick={({ node, event }) => {
-      if (event.detail === 2) navigate(`/node/${node.id}`)
+      if (event.detail === 2) bus.emit('nav:node', { id: Number(node.id) })
     }}
     onselectionchange={({ nodes, edges }) =>
       level.select(
