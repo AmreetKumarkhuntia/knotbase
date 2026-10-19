@@ -52,10 +52,19 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 A handler plus a route in the resource file under `backend/src/`, plus one line in `frontend/src/api.ts`.
 
 ## UI
-- `frontend/src/` is split by feature: `home/` (HomePage, SystemCard, NewSystemForm, `systems.ts` loaders), `node/` (NodePage; `canvas/` holds the xyflow wrapper, card and overlays; `inspector/` holds the inspectors and `sections/`), `app/` (TopBar, ThemeToggle) and `lib/` (api, kinds, format, layout, router, notify, theme, form helpers, and `ui/` primitives Button, Icon, Swatch). `App.svelte` routes `/` to Home and `/node/:id` to NodePage; `/node/1` redirects to `/` because systems are the children of root 1 and the root is never shown.
-- Rules: no inline `<svg>` outside `lib/ui/Icon.svelte`; navigation is a plain `<a href>` (the router delegates same-origin clicks); forms use `submitGuard`, `escape` and `focus` from `lib/form.svelte.ts`; `act()` wraps mutations and clears the banner first, `load()` wraps fetches and never clears it.
-- Styles: `styles/tokens.css` holds the two palettes (`:root` is the light "notebook", `[data-theme=console]` the dark one), `styles/base.css` the reset, element defaults and the closed set of utilities, `node/canvas/xyflow.css` the library overrides. Everything else is a scoped `<style>` block in the component that owns the markup; `:global` only for xyflow internals and rendered markdown.
+`frontend/src/` follows the SvelteKit idiom without SvelteKit (`$lib` alias in vite and tsconfig). `App.svelte` is the hand router: `/` → `routes/+page.svelte`, `/node/:id` → `routes/node/[id]/+page.svelte`, both inside `routes/+layout.svelte`; `/node/1` redirects to `/` because systems are the children of root 1 and the root is never shown.
 
+| Folder | Holds | May import |
+|---|---|---|
+| `routes/` | the layout (the one navbar, fed by the shell store) and one file per page; a page composes widgets and sets its navbar chrome in the shell store, owns nothing reusable | widgets, components, stores |
+| `lib/components/` | presentational: props in, callbacks out, scoped `<style>`; no store or service imports | components, utils |
+| `lib/widgets/` | composites wired to state: read stores, call services, compose components (NodeFlow, SystemGrid, `inspector/*`) | everything below |
+| `lib/services/` | data access and domain operations, plain TS, no runes (`api`, `nodes`, `systems`) | `api.ts` |
+| `lib/stores/` | reactive state as `.svelte.ts`: `router`, `theme`, `notify`, `shell`, and per node page `LevelState` (data, selection, mutations; provided via context) over `NodeData` | services, utils |
+| `lib/utils/` | pure helpers and the form helpers | nothing |
+| `lib/styles/` | `tokens.css` (the two palettes), `base.css` (reset, element defaults, the closed set of utilities), `xyflow.css` (library overrides): the only global CSS | |
+
+Rules: no inline `<svg>` outside `Icon.svelte`; navigation is a plain `<a href>` (the router store delegates same-origin clicks); forms use `submitGuard`, `escape` and `focus`; mutations go through `LevelState.change()` (or `act()`), which clears the banner first, fetches through `load()` or `NodeData`, which never clear it; `:global` only for xyflow internals and rendered markdown.
 ## Rules
 - Runtime `sqlx::query_as` only, never `query!` macros (no `DATABASE_URL` at build, no `.sqlx/`).
 - The schema is the validator: CHECK and FK constraints, mapped to 400. No hand-written validators.

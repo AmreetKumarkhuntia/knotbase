@@ -1,32 +1,24 @@
 <script lang="ts">
   import type { Item } from '$lib/services/api'
+  import { nodes } from '$lib/services/nodes'
+  import { submitGuard } from '$lib/utils/form.svelte'
+  import Section from '$lib/components/Section.svelte'
   import Button from '$lib/components/Button.svelte'
   import Icon from '$lib/components/Icon.svelte'
-  import { submitGuard } from '$lib/utils/form.svelte'
 
-  let {
-    items,
-    onAdd,
-    onToggle,
-    onDelete,
-  }: {
-    items: Item[]
-    onAdd: (text: string) => Promise<boolean>
-    onToggle: (item: Item) => void
-    onDelete: (id: number) => void
-  } = $props()
+  let { id, items, change }: { id: number; items: Item[]; change: (fn: () => Promise<unknown>) => Promise<boolean> } =
+    $props()
   let text = $state('')
   const done = $derived(items.filter((i) => i.done).length)
   const form = submitGuard(async () => {
-    if (text.trim() && (await onAdd(text.trim()))) text = ''
+    if (text.trim() && (await change(() => nodes.addItem(id, text.trim())))) text = ''
   })
 </script>
 
-<section class="section" aria-labelledby="items-h">
-  <div class="row between">
-    <h2 id="items-h" class="eyebrow">Items</h2>
+<Section title="Items">
+  {#snippet action()}
     {#if items.length}<span class="mono muted">{done} / {items.length} done</span>{/if}
-  </div>
+  {/snippet}
   {#if items.length}
     <ul class="items">
       {#each items as item (item.id)}
@@ -38,13 +30,15 @@
               checked={item.done}
               onchange={(e) => {
                 e.currentTarget.checked = item.done
-                onToggle(item)
+                change(() => nodes.toggleItem(item))
               }}
             />
             <span>{item.text}</span>
           </label>
-          <Button variant="icon" aria-label="Delete item: {item.text}" onclick={() => onDelete(item.id)}
-            ><Icon name="x" /></Button
+          <Button
+            variant="icon"
+            aria-label="Delete item: {item.text}"
+            onclick={() => change(() => nodes.removeItem(item.id))}><Icon name="x" /></Button
           >
         </li>
       {/each}
@@ -57,7 +51,7 @@
     <input id="new-item" class="grow" bind:value={text} placeholder="Add an item…" required />
     <Button type="submit" disabled={form.busy}>Add</Button>
   </form>
-</section>
+</Section>
 
 <style>
   .items {

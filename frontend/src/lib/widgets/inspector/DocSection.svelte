@@ -1,10 +1,13 @@
 <script lang="ts">
   import { tick } from 'svelte'
   import { marked } from 'marked'
-  import Button from '$lib/components/Button.svelte'
+  import { nodes } from '$lib/services/nodes'
   import { focus } from '$lib/utils/form.svelte'
+  import Section from '$lib/components/Section.svelte'
+  import Button from '$lib/components/Button.svelte'
 
-  let { doc, onSave }: { doc: string; onSave: (doc: string) => Promise<boolean> } = $props()
+  let { id, doc, change }: { id: number; doc: string; change: (fn: () => Promise<unknown>) => Promise<boolean> } =
+    $props()
   let editing = $state(false)
   let draft = $state('')
   let editBtn = $state<HTMLButtonElement>()
@@ -23,15 +26,14 @@
   // stay in the editor on failure so the text isn't lost
   async function save(e: SubmitEvent) {
     e.preventDefault()
-    if (await onSave(draft)) close()
+    if (await change(() => nodes.setDoc(id, draft))) close()
   }
 </script>
 
-<section class="section doc" aria-labelledby="doc-h">
-  <div class="row between">
-    <h2 id="doc-h" class="eyebrow">Doc</h2>
+<Section title="Doc" grow>
+  {#snippet action()}
     {#if !editing && doc}<Button variant="ghost" bind:ref={editBtn} onclick={edit}>Edit</Button>{/if}
-  </div>
+  {/snippet}
   {#if editing}
     <form class="stack" onsubmit={save}>
       <label class="sr-only" for="doc-md">Markdown</label>
@@ -54,7 +56,7 @@
     <p class="muted">No doc yet. Write down what this does and why it exists.</p>
     <Button class="self-start" bind:ref={editBtn} onclick={edit}>Write doc</Button>
   {/if}
-</section>
+</Section>
 
 <style>
   .prose {

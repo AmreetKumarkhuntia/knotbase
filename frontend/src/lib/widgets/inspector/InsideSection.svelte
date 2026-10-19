@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { ApiNode } from '$lib/services/api'
+  import Section from '$lib/components/Section.svelte'
   import Swatch from '$lib/components/Swatch.svelte'
   import Icon from '$lib/components/Icon.svelte'
 
   let { nodes, onPick }: { nodes: ApiNode[]; onPick: (id: number) => void } = $props()
 </script>
 
-<section class="section" aria-labelledby="inside-h">
-  <h2 id="inside-h" class="eyebrow">Inside</h2>
+<Section title="Inside">
   {#each nodes as n (n.id)}
     <button class="rowbtn" onclick={() => onPick(n.id)}>
       <Swatch kind={n.kind} size={10} />
@@ -17,7 +17,7 @@
   {:else}
     <p class="muted">Nothing inside yet.</p>
   {/each}
-</section>
+</Section>
 
 <style>
   .rowbtn {
