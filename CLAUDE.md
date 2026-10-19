@@ -62,3 +62,6 @@ A handler plus a route in the resource file under `backend/src/`, plus one line 
 - Never disable SQLite foreign keys; cascades silently stop working.
 - TypeScript stays on 6.x: `svelte-check` does not support 7.
 - Ponytail mode: smallest complete change. Mark known limits in code as `shortcut: <limit>, <when to upgrade>`.
+
+## Commits
+Conventional Commits: `type(scope): imperative subject`, body says why. Types `feat` `fix` `refactor` `chore` `docs` `test` `ci`; scopes `frontend` `backend` `dev` `ci` `docs` (none for repo-wide). No Co-Authored-By or other trailers.
