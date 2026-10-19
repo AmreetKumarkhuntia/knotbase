@@ -20,5 +20,5 @@ export default ts.config(
   },
   { ignores: ['dist/'] },
   // not SvelteKit: there is no $app/paths resolve() for hrefs
-  { rules: { 'svelte/no-navigation-without-resolve': 'off' } },
+  { rules: { 'svelte/no-navigation-without-resolve': 'off', 'svelte/valid-prop-names-in-kit-pages': 'off' } },
 )

@@ -52,9 +52,9 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 A handler plus a route in the resource file under `backend/src/`, plus one line in `frontend/src/api.ts`.
 
 ## UI
-- Two pages under `frontend/src/pages/`, routed by `App.svelte`: `HomePage.svelte` at `/` (the systems grid: a system is a child of root 1 with kind `system`; root 1 itself is never shown and `/node/1` redirects to `/`) and `NodePage.svelte` at `/node/:id` (canvas left, inspector right, rendered at every depth).
-- Components by area: `components/` (Button, Link, Swatch, TopBar, ThemeToggle), `graph/` (xyflow canvas, card, add-node popover, legend, help), `inspector/` (node and edge inspectors and their sections), `home/` (system card, new-system form).
-- Shared state: `ui.svelte.ts` (error banner; `act()` wraps mutations and clears the banner first, `load()` wraps fetches and never clears it), `theme.svelte.ts` (notebook/console, persisted in localStorage), `nav.svelte.ts` (history). Look tokens live in `app.css`: `:root` is the light "notebook", `[data-theme=console]` the dark one.
+- `frontend/src/` is split by feature: `home/` (HomePage, SystemCard, NewSystemForm, `systems.ts` loaders), `node/` (NodePage; `canvas/` holds the xyflow wrapper, card and overlays; `inspector/` holds the inspectors and `sections/`), `app/` (TopBar, ThemeToggle) and `lib/` (api, kinds, format, layout, router, notify, theme, form helpers, and `ui/` primitives Button, Icon, Swatch). `App.svelte` routes `/` to Home and `/node/:id` to NodePage; `/node/1` redirects to `/` because systems are the children of root 1 and the root is never shown.
+- Rules: no inline `<svg>` outside `lib/ui/Icon.svelte`; navigation is a plain `<a href>` (the router delegates same-origin clicks); forms use `submitGuard`, `escape` and `focus` from `lib/form.svelte.ts`; `act()` wraps mutations and clears the banner first, `load()` wraps fetches and never clears it.
+- Styles: `styles/tokens.css` holds the two palettes (`:root` is the light "notebook", `[data-theme=console]` the dark one), `styles/base.css` the reset, element defaults and the closed set of utilities, `node/canvas/xyflow.css` the library overrides. Everything else is a scoped `<style>` block in the component that owns the markup; `:global` only for xyflow internals and rendered markdown.
 
 ## Rules
 - Runtime `sqlx::query_as` only, never `query!` macros (no `DATABASE_URL` at build, no `.sqlx/`).
