@@ -2,18 +2,30 @@
   import type { Item } from '../api'
   import Button from '../components/Button.svelte'
 
-  let { items, onAdd, onToggle, onDelete }: {
-    items: Item[]; onAdd: (text: string) => Promise<boolean>; onToggle: (item: Item) => void; onDelete: (id: number) => void
+  let {
+    items,
+    onAdd,
+    onToggle,
+    onDelete,
+  }: {
+    items: Item[]
+    onAdd: (text: string) => Promise<boolean>
+    onToggle: (item: Item) => void
+    onDelete: (id: number) => void
   } = $props()
   let text = $state('')
   let busy = $state(false) // a double Enter must not add two items
-  const done = $derived(items.filter(i => i.done).length)
+  const done = $derived(items.filter((i) => i.done).length)
 
   async function add(e: SubmitEvent) {
     e.preventDefault()
     if (busy || !text.trim()) return
     busy = true
-    try { if (await onAdd(text.trim())) text = '' } finally { busy = false }
+    try {
+      if (await onAdd(text.trim())) text = ''
+    } finally {
+      busy = false
+    }
   }
 </script>
 
@@ -28,11 +40,27 @@
         <li class:done={item.done}>
           <label>
             <!-- no optimistic state: snap back to server truth, the refetch sets the new value -->
-            <input type="checkbox" checked={item.done} onchange={(e) => { e.currentTarget.checked = item.done; onToggle(item) }} />
+            <input
+              type="checkbox"
+              checked={item.done}
+              onchange={(e) => {
+                e.currentTarget.checked = item.done
+                onToggle(item)
+              }}
+            />
             <span>{item.text}</span>
           </label>
           <Button variant="icon" aria-label="Delete item: {item.text}" onclick={() => onDelete(item.id)}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg
+            >
           </Button>
         </li>
       {/each}

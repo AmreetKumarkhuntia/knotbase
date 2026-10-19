@@ -3,4 +3,10 @@
 </script>
 
 <!-- colour only ever means kind; an unknown kind falls back to muted -->
-<span class="swatch" aria-hidden="true" style:--kind="var(--kind-{kind}, var(--muted))" style:width="{size}px" style:height="{size}px"></span>
+<span
+  class="swatch"
+  aria-hidden="true"
+  style:--kind="var(--kind-{kind}, var(--muted))"
+  style:width="{size}px"
+  style:height="{size}px"
+></span>

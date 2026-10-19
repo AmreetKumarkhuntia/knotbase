@@ -3,20 +3,45 @@
   import Button from '../components/Button.svelte'
 
   // the parent keys this component by edge id, so the draft is seeded once
-  let { edge, nodes, levelName, change, onClear }: {
-    edge: Edge; nodes: Node[]; levelName: string; change: (p: Promise<unknown>) => Promise<boolean>; onClear: () => void
+  let {
+    edge,
+    nodes,
+    levelName,
+    change,
+    onClear,
+  }: {
+    edge: Edge
+    nodes: Node[]
+    levelName: string
+    change: (p: Promise<unknown>) => Promise<boolean>
+    onClear: () => void
   } = $props()
   // svelte-ignore state_referenced_locally
   let label = $state(edge.label)
-  const name = (id: number) => nodes.find(n => n.id === id)?.name ?? '?'
+  const name = (id: number) => nodes.find((n) => n.id === id)?.name ?? '?'
 
-  async function save(e: SubmitEvent) { e.preventDefault(); await change(api.updateEdge(edge.id, { label: label.trim() })) }
-  async function remove() { if (await change(api.deleteEdge(edge.id))) onClear() }
+  async function save(e: SubmitEvent) {
+    e.preventDefault()
+    await change(api.updateEdge(edge.id, { label: label.trim() }))
+  }
+  async function remove() {
+    if (await change(api.deleteEdge(edge.id))) onClear()
+  }
 </script>
 
 <div class="head">
   <span class="kindline">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg
+    >
     connection<span class="spacer"></span><Button class="small" onclick={onClear}>Clear</Button>
   </span>
   <h1>{name(edge.source_id)} <span class="muted arrow" aria-hidden="true">→</span> {name(edge.target_id)}</h1>

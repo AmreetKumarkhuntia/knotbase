@@ -16,7 +16,9 @@
       {#each crumbs as c, i (c.id)}
         {#if c.id !== 1}
           <span class="sep" aria-hidden="true">/</span>
-          {#if i === crumbs.length - 1}<span aria-current="page">{c.name}</span>{:else}<Link href="/node/{c.id}">{c.name}</Link>{/if}
+          {#if i === crumbs.length - 1}<span aria-current="page">{c.name}</span>{:else}<Link href="/node/{c.id}"
+              >{c.name}</Link
+            >{/if}
         {/if}
       {/each}
     {:else}

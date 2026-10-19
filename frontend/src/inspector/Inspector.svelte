@@ -10,8 +10,18 @@
   import ItemsSection from './ItemsSection.svelte'
 
   // Inspects the level itself (id === level.id, using the page's data) or a selected card (self-loaded); the parent keys this component by id.
-  let { id, level, levelGraph, change: pageChange, onSelect }: {
-    id: number; level: NodeDetail; levelGraph: Graph; change: (p: Promise<unknown>) => Promise<boolean>; onSelect: (id: number | null) => void
+  let {
+    id,
+    level,
+    levelGraph,
+    change: pageChange,
+    onSelect,
+  }: {
+    id: number
+    level: NodeDetail
+    levelGraph: Graph
+    change: (p: Promise<unknown>) => Promise<boolean>
+    onSelect: (id: number | null) => void
   } = $props()
   const isLevel = $derived(id === level.id)
   let picked = $state.raw<{ node: NodeDetail; graph: Graph }>()
@@ -24,9 +34,14 @@
   let seq = 0 // only the latest reload may write
   async function reload() {
     const n = ++seq
-    await load(Promise.all([api.node(id), api.graph(id)]).then(([d, g]) => { if (n === seq) picked = { node: d, graph: g } }))
+    await load(
+      Promise.all([api.node(id), api.graph(id)]).then(([d, g]) => {
+        if (n === seq) picked = { node: d, graph: g }
+      }),
+    )
   }
-  // svelte-ignore state_referenced_locally: the parent keys this component by id, so the initial value is the only value
+  // the parent keys this component by id, so the initial value is the only value
+  // svelte-ignore state_referenced_locally
   if (!isLevel) reload()
   // the page refetches the level after every mutation; a selected card refetches its own detail too
   async function change(p: Promise<unknown>) {
@@ -39,14 +54,18 @@
     if (draft.trim() && (await change(api.updateNode(id, { name: draft.trim() })))) renaming = false
   }
   async function remove() {
-    if (isLevel) { // no refetch of a node that is gone: go up a level instead
-      if (await act(api.deleteNode(id))) { const up = level.breadcrumb.at(-2); navigate(up && up.id !== 1 ? `/node/${up.id}` : '/') }
+    if (isLevel) {
+      // no refetch of a node that is gone: go up a level instead
+      if (await act(api.deleteNode(id))) {
+        const up = level.breadcrumb.at(-2)
+        navigate(up && up.id !== 1 ? `/node/${up.id}` : '/')
+      }
     } else if (await pageChange(api.deleteNode(id))) onSelect(null)
   }
   const meta = $derived.by(() => {
     if (!graph) return ''
     if (isLevel) return `${plural(levelGraph.nodes.length, 'node')} · ${plural(levelGraph.edges.length, 'connection')}`
-    const conn = levelGraph.edges.filter(e => e.source_id === id || e.target_id === id).length
+    const conn = levelGraph.edges.filter((e) => e.source_id === id || e.target_id === id).length
     return `${graph.nodes.length} inside · ${plural(conn, 'connection')} at this level`
   })
 </script>
@@ -55,7 +74,10 @@
   <div class="head">
     <span class="kindline">
       <Swatch kind={node.kind} />{node.kind}<span class="spacer"></span>
-      {#if isLevel}<span>this level</span>{:else}<span>selected</span><Button class="small" onclick={() => onSelect(null)}>Clear</Button>{/if}
+      {#if isLevel}<span>this level</span>{:else}<span>selected</span><Button
+          class="small"
+          onclick={() => onSelect(null)}>Clear</Button
+        >{/if}
     </span>
     {#if !isLevel}<p class="sr-only" role="status">{node.name} selected</p>{/if}
     {#if renaming}
@@ -80,19 +102,44 @@
     {:else}
       <div class="row">
         {#if !isLevel}
-          <Button variant="primary" onclick={() => navigate(`/node/${id}`)}>Open {node.name}<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></Button>
+          <Button variant="primary" onclick={() => navigate(`/node/${id}`)}
+            >Open {node.name}<svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg
+            ></Button
+          >
         {/if}
-        <Button onclick={() => { draft = node?.name ?? ''; renaming = true }}>Rename</Button>
+        <Button
+          onclick={() => {
+            draft = node?.name ?? ''
+            renaming = true
+          }}>Rename</Button
+        >
         <!-- deviation from the prototype: the level can delete itself, else a system could never be removed -->
-        <Button variant="danger" onclick={() => { confirming = true; renaming = false }}>Delete</Button>
+        <Button
+          variant="danger"
+          onclick={() => {
+            confirming = true
+            renaming = false
+          }}>Delete</Button
+        >
       </div>
     {/if}
   </div>
   <!-- shortcut: picking a child of a selected card opens the card rather than selecting the child inside it; carry the child id through navigate() when wanted. -->
   <InsideSection nodes={graph.nodes} onPick={(cid) => (isLevel ? onSelect(cid) : navigate(`/node/${id}`))} />
   <DocSection doc={node.doc} onSave={(doc) => change(api.updateNode(id, { doc }))} />
-  <ItemsSection items={node.items}
+  <ItemsSection
+    items={node.items}
     onAdd={(text) => change(api.createItem({ node_id: id, text }))}
     onToggle={(it) => change(api.updateItem(it.id, { done: !it.done }))}
-    onDelete={(iid) => change(api.deleteItem(iid))} />
+    onDelete={(iid) => change(api.deleteItem(iid))}
+  />
 {/if}

@@ -4,10 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>try{var t=localStorage.getItem('theme');document.documentElement.dataset.theme=t==='console'||t==='notebook'?t:matchMedia('(prefers-color-scheme: dark)').matches?'console':'notebook'}catch(e){document.documentElement.dataset.theme='notebook'}</script>
+    <script>
+      try {
+        var t = localStorage.getItem('theme')
+        document.documentElement.dataset.theme =
+          t === 'console' || t === 'notebook'
+            ? t
+            : matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'console'
+              : 'notebook'
+      } catch (e) {
+        document.documentElement.dataset.theme = 'notebook'
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <title>knotbase</title>
   </head>
   <body>

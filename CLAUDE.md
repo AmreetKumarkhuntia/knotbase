@@ -11,7 +11,7 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 - Setup (once): `cd frontend && npm ci`
 - Dev: `npm start` from the repo root, same as `./dev.sh` (Vite :5025 proxies `/api` to Rust :3000), open http://localhost:5025.
 - Backend (in `backend/`): `cargo run`, `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
-- Frontend (in `frontend/`): `npm run dev`, `npm run build` (`svelte-check` then `vite build`; the only frontend gate, and all CI runs). `npm run check` also type-checks `vite.config.ts`, which CI does not.
+- Frontend (in `frontend/`): `npm run dev`, `npm run lint` (Prettier check then ESLint; CI runs it), `npm run format` (Prettier write), `npm run build` (`svelte-check` then `vite build`; CI runs it). `npm run check` also type-checks `vite.config.ts`, which CI does not.
 - Prod: `cd frontend && npm run build`, then `cd backend && cargo run --release`, open http://localhost:3000.
 - Seed: `sqlite3 backend/knotbase.db < backend/seed.sql` after one backend run, on an empty DB (all-or-nothing; a rerun fails cleanly). Reset: `rm backend/knotbase.db*`.
 - Env: `STATIC_DIR` (default `<repo>/frontend/dist`) and `DATABASE_URL` (default `sqlite:<repo>/backend/knotbase.db?mode=rwc`; must be a `sqlite:` URL, and without `?mode=rwc` a missing file is not created). Both defaults are absolute (baked from `CARGO_MANIFEST_DIR`); a value you set is used as written, relative to the working directory (`backend/` under `cargo run`), so prefer absolute paths.
