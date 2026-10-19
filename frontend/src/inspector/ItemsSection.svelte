@@ -6,11 +6,14 @@
     items: Item[]; onAdd: (text: string) => Promise<boolean>; onToggle: (item: Item) => void; onDelete: (id: number) => void
   } = $props()
   let text = $state('')
+  let busy = $state(false) // a double Enter must not add two items
   const done = $derived(items.filter(i => i.done).length)
 
   async function add(e: SubmitEvent) {
     e.preventDefault()
-    if (text.trim() && (await onAdd(text.trim()))) text = ''
+    if (busy || !text.trim()) return
+    busy = true
+    try { if (await onAdd(text.trim())) text = '' } finally { busy = false }
   }
 </script>
 
@@ -40,6 +43,6 @@
   <form class="row" onsubmit={add}>
     <label class="sr-only" for="new-item">New item</label>
     <input id="new-item" class="grow" bind:value={text} placeholder="Add an item…" required />
-    <Button type="submit">Add</Button>
+    <Button type="submit" disabled={busy}>Add</Button>
   </form>
 </section>

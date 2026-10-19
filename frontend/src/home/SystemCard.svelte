@@ -3,16 +3,17 @@
   import Link from '../components/Link.svelte'
   import { plural } from '../flow'
 
-  let { node, doc, children }: { node: Node; doc: string; children: Node[] } = $props()
-  const CW = 216, CH = 76, TW = 232, TH = 72 // card size on the canvas, thumbnail box
+  let { node, doc, inside }: { node: Node; doc: string; inside: Node[] } = $props()
+  // shortcut: mirrors the .card and .thumb sizes in app.css; derive from CSS vars if cards ever become resizable
+  const CW = 216, CH = 76, TW = 232, TH = 72
   // the system's top level scaled into the thumbnail box, as the prototype draws it
   const thumb = $derived.by(() => {
-    if (!children.length) return []
-    const minX = Math.min(...children.map(n => n.x)), minY = Math.min(...children.map(n => n.y))
-    const spanX = Math.max(...children.map(n => n.x + CW)) - minX, spanY = Math.max(...children.map(n => n.y + CH)) - minY
+    if (!inside.length) return []
+    const minX = Math.min(...inside.map(n => n.x)), minY = Math.min(...inside.map(n => n.y))
+    const spanX = Math.max(...inside.map(n => n.x + CW)) - minX, spanY = Math.max(...inside.map(n => n.y + CH)) - minY
     const sc = Math.min(TW / spanX, TH / spanY, 0.3)
     const ox = (TW - spanX * sc) / 2, oy = (TH - spanY * sc) / 2
-    return children.map(n => ({ id: n.id, kind: n.kind, l: ox + (n.x - minX) * sc, t: oy + (n.y - minY) * sc, w: CW * sc, h: CH * sc }))
+    return inside.map(n => ({ id: n.id, kind: n.kind, l: ox + (n.x - minX) * sc, t: oy + (n.y - minY) * sc, w: CW * sc, h: CH * sc }))
   })
 </script>
 
@@ -26,5 +27,5 @@
   </span>
   <span class="title">{node.name}</span>
   <span class="desc">{doc || 'No description yet.'}</span>
-  <span class="mono muted stats">{plural(children.length, 'node')}</span>
+  <span class="mono muted foot">{plural(inside.length, 'node')}</span>
 </Link>

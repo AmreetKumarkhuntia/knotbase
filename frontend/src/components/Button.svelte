@@ -3,7 +3,7 @@
   import type { HTMLButtonAttributes } from 'svelte/elements'
 
   let { variant = 'secondary', type = 'button', class: cls, ref = $bindable(), children, ...rest }: {
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'icon'; ref?: HTMLButtonElement; children: Snippet
+    variant?: 'primary' | 'secondary' | 'danger' | 'danger-fill' | 'ghost' | 'icon'; ref?: HTMLButtonElement; children: Snippet
   } & HTMLButtonAttributes = $props()
 </script>
 

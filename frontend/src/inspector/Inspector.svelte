@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api, type Graph, type NodeDetail } from '../api'
   import { navigate } from '../nav.svelte'
-  import { act } from '../ui.svelte'
+  import { act, load } from '../ui.svelte'
   import { plural } from '../flow'
   import Button from '../components/Button.svelte'
   import Swatch from '../components/Swatch.svelte'
@@ -9,13 +9,14 @@
   import DocSection from './DocSection.svelte'
   import ItemsSection from './ItemsSection.svelte'
 
-  // Inspects the level itself (id === level.id) or a selected card; the parent keys this component by id.
-  let { id, level, levelGraph, onChange, onSelect }: {
-    id: number; level: NodeDetail; levelGraph: Graph; onChange: () => Promise<void>; onSelect: (id: number | null) => void
+  // Inspects the level itself (id === level.id, using the page's data) or a selected card (self-loaded); the parent keys this component by id.
+  let { id, level, levelGraph, change: pageChange, onSelect }: {
+    id: number; level: NodeDetail; levelGraph: Graph; change: (p: Promise<unknown>) => Promise<boolean>; onSelect: (id: number | null) => void
   } = $props()
   const isLevel = $derived(id === level.id)
-  let node = $state.raw<NodeDetail>()
-  let graph = $state.raw<Graph>()
+  let picked = $state.raw<{ node: NodeDetail; graph: Graph }>()
+  const node = $derived(isLevel ? level : picked?.node)
+  const graph = $derived(isLevel ? levelGraph : picked?.graph)
   let renaming = $state(false)
   let draft = $state('')
   let confirming = $state(false)
@@ -23,14 +24,14 @@
   let seq = 0 // only the latest reload may write
   async function reload() {
     const n = ++seq
-    // shortcut: when id === level.id this repeats the page's own fetch; local and cheap, share the data if it ever shows.
-    await act(Promise.all([api.node(id), api.graph(id)]).then(([d, g]) => { if (n === seq) { node = d; graph = g } }))
+    await load(Promise.all([api.node(id), api.graph(id)]).then(([d, g]) => { if (n === seq) picked = { node: d, graph: g } }))
   }
-  reload()
-  // shortcut: refetch after every mutation, no optimistic state (a failed one still refetches so the UI snaps back, then shows the banner).
+  // svelte-ignore state_referenced_locally: the parent keys this component by id, so the initial value is the only value
+  if (!isLevel) reload()
+  // the page refetches the level after every mutation; a selected card refetches its own detail too
   async function change(p: Promise<unknown>) {
-    const ok = await act(p)
-    await Promise.all([reload(), onChange()])
+    const ok = await pageChange(p)
+    if (!isLevel) await reload()
     return ok
   }
   async function rename(e: SubmitEvent) {
@@ -38,9 +39,9 @@
     if (draft.trim() && (await change(api.updateNode(id, { name: draft.trim() })))) renaming = false
   }
   async function remove() {
-    if (!(await act(api.deleteNode(id)))) return
-    if (isLevel) { const up = level.breadcrumb.at(-2); navigate(up && up.id !== 1 ? `/node/${up.id}` : '/') }
-    else { onSelect(null); await onChange() }
+    if (isLevel) { // no refetch of a node that is gone: go up a level instead
+      if (await act(api.deleteNode(id))) { const up = level.breadcrumb.at(-2); navigate(up && up.id !== 1 ? `/node/${up.id}` : '/') }
+    } else if (await pageChange(api.deleteNode(id))) onSelect(null)
   }
   const meta = $derived.by(() => {
     if (!graph) return ''
@@ -56,6 +57,7 @@
       <Swatch kind={node.kind} />{node.kind}<span class="spacer"></span>
       {#if isLevel}<span>this level</span>{:else}<span>selected</span><Button class="small" onclick={() => onSelect(null)}>Clear</Button>{/if}
     </span>
+    {#if !isLevel}<p class="sr-only" role="status">{node.name} selected</p>{/if}
     {#if renaming}
       <form class="row" onsubmit={rename}>
         <label class="sr-only" for="rename">Name</label>
@@ -71,7 +73,7 @@
       <div class="confirm">
         <span>Delete <b>{node.name}</b> and everything inside it? This can't be undone.</span>
         <div class="row">
-          <Button variant="danger" class="fill" onclick={remove}>Delete</Button>
+          <Button variant="danger-fill" onclick={remove}>Delete</Button>
           <Button onclick={() => (confirming = false)}>Cancel</Button>
         </div>
       </div>
@@ -81,6 +83,7 @@
           <Button variant="primary" onclick={() => navigate(`/node/${id}`)}>Open {node.name}<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></Button>
         {/if}
         <Button onclick={() => { draft = node?.name ?? ''; renaming = true }}>Rename</Button>
+        <!-- deviation from the prototype: the level can delete itself, else a system could never be removed -->
         <Button variant="danger" onclick={() => { confirming = true; renaming = false }}>Delete</Button>
       </div>
     {/if}

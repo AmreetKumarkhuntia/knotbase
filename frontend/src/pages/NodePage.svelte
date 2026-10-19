@@ -2,11 +2,12 @@
   import { tick } from 'svelte'
   import { api, type Graph, type NodeDetail } from '../api'
   import { navigate } from '../nav.svelte'
-  import { act, ui } from '../ui.svelte'
+  import { act, load, ui } from '../ui.svelte'
   import { plural } from '../flow'
   import TopBar from '../components/TopBar.svelte'
   import ThemeToggle from '../components/ThemeToggle.svelte'
   import Button from '../components/Button.svelte'
+  import Link from '../components/Link.svelte'
   import GraphCanvas from '../graph/GraphCanvas.svelte'
   import AddNodeForm from '../graph/AddNodeForm.svelte'
   import Inspector from '../inspector/Inspector.svelte'
@@ -24,12 +25,13 @@
   let seq = 0 // only the latest reload may write: multi-node drags and inspector edits fire overlapping reloads
   async function reload() {
     const n = ++seq
-    await act(Promise.all([api.node(id), api.graph(id)]).then(([node, graph]) => {
+    await load(Promise.all([api.node(id), api.graph(id)]).then(([node, graph]) => {
       if (n === seq) { data = { node, graph }; document.title = `${node.name} · knotbase` }
     }))
   }
+  ui.error = '' // a banner from the previous page is not about this one
   reload()
-  // shortcut: refetch after every mutation, no optimistic state (a failed one still refetches so the UI snaps back, then shows the banner); revisit if the backend is ever remote.
+  // shortcut: refetch after every mutation, no optimistic state (a failed one still refetches so the UI snaps back, and the banner stays); revisit if the backend is ever remote.
   async function change(p: Promise<unknown>) { const ok = await act(p); await reload(); return ok }
 
   async function addNode(name: string, kind: string) {
@@ -45,19 +47,19 @@
 <TopBar crumbs={data?.node.breadcrumb ?? []}>
   {#if data}<span class="stats">{plural(data.graph.nodes.length, 'node')} · {plural(data.graph.edges.length, 'connection')}</span>{/if}
   <ThemeToggle />
-  <Button variant="primary" onclick={() => (adding = !adding)}>
+  <Button variant="primary" disabled={!data} onclick={() => (adding = !adding)}>
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"></path></svg>Add node
   </Button>
 </TopBar>
 {#if data}
   {@const node = data.node}
   {@const graph = data.graph}
-  <div class="split">
+  <main class="split">
     <section class="canvas-col" aria-label="Graph of {node.name}">
       <!-- shortcut: multi-delete is one request per item, not atomic; it stops at the first failure, add a batch endpoint when partial failure matters. -->
       <GraphCanvas bind:this={canvas} nodes={graph.nodes} edges={graph.edges}
         onMove={(ms) => change(Promise.all(ms.map(m => api.updateNode(m.id, { x: m.x, y: m.y }))))}
-        onConnect={(s, t) => change(api.createEdge({ parent_id: node.id, source_id: s, target_id: t }))}
+        onConnect={(s, t) => { if (!graph.edges.some(e => e.source_id === s && e.target_id === t)) change(api.createEdge({ parent_id: node.id, source_id: s, target_id: t })) }}
         onDelete={(ns, es) => change((async () => { for (const n of ns) await api.deleteNode(n); for (const e of es) await api.deleteEdge(e) })())}
         onOpen={(cid) => navigate(`/node/${cid}`)}
         onSelect={(n, e) => { selectedId = n; selectedEdgeId = e }} />
@@ -66,9 +68,11 @@
       {:else if graph.nodes.length === 0}
         <div class="cover">
           <div class="empty-card">
-            <p><b>Nothing inside {node.name} yet</b></p>
+            <p class="title">Nothing inside {node.name} yet</p>
             <p class="muted">Add a part, a flow or a step. Each node gets its own graph, doc and checklist.</p>
-            <Button variant="primary" onclick={() => (adding = true)}>Add node</Button>
+            <Button variant="primary" onclick={() => (adding = true)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"></path></svg>Add node
+            </Button>
           </div>
         </div>
       {/if}
@@ -76,15 +80,23 @@
     <aside class="inspector" aria-label="Inspector">
       {#if edge}
         {#key edge.id}
-          <EdgeInspector {edge} nodes={graph.nodes} levelName={node.name} onChange={reload} onClear={() => { selectedEdgeId = null; canvas?.select(null) }} />
+          <EdgeInspector {edge} nodes={graph.nodes} levelName={node.name} {change} onClear={() => { selectedEdgeId = null; canvas?.select(null) }} />
         {/key}
       {:else}
         {#key selectedId ?? node.id}
-          <Inspector id={selectedId ?? node.id} level={node} levelGraph={graph} onChange={reload} onSelect={(i) => canvas?.select(i)} />
+          <Inspector id={selectedId ?? node.id} level={node} levelGraph={graph} {change} onSelect={(i) => canvas?.select(i)} />
         {/key}
       {/if}
     </aside>
-  </div>
-{:else if !ui.error}
+  </main>
+{:else if ui.error}
+  <main class="cover static">
+    <div class="empty-card">
+      <p class="title">This node can't be loaded</p>
+      <p class="muted">It may have been deleted, or the server is down.</p>
+      <Link href="/" class="btn primary">Back to Home</Link>
+    </div>
+  </main>
+{:else}
   <p class="empty">Loading…</p>
 {/if}

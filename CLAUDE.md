@@ -54,7 +54,7 @@ A handler plus a route in the resource file under `backend/src/`, plus one line 
 ## UI
 - Two pages under `frontend/src/pages/`, routed by `App.svelte`: `HomePage.svelte` at `/` (the systems grid: a system is a child of root 1 with kind `system`; root 1 itself is never shown and `/node/1` redirects to `/`) and `NodePage.svelte` at `/node/:id` (canvas left, inspector right, rendered at every depth).
 - Components by area: `components/` (Button, Link, Swatch, TopBar, ThemeToggle), `graph/` (xyflow canvas, card, add-node popover, legend, help), `inspector/` (node and edge inspectors and their sections), `home/` (system card, new-system form).
-- Shared state: `ui.svelte.ts` (error banner + `act()` for mutations), `theme.svelte.ts` (notebook/console, persisted in localStorage), `nav.svelte.ts` (history). Look tokens live in `app.css`: `:root` is the light "notebook", `[data-theme=console]` the dark one.
+- Shared state: `ui.svelte.ts` (error banner; `act()` wraps mutations and clears the banner first, `load()` wraps fetches and never clears it), `theme.svelte.ts` (notebook/console, persisted in localStorage), `nav.svelte.ts` (history). Look tokens live in `app.css`: `:root` is the light "notebook", `[data-theme=console]` the dark one.
 
 ## Rules
 - Runtime `sqlx::query_as` only, never `query!` macros (no `DATABASE_URL` at build, no `.sqlx/`).

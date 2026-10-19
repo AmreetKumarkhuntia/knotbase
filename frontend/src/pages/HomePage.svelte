@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api, type Node } from '../api'
   import { navigate } from '../nav.svelte'
-  import { act, ui } from '../ui.svelte'
+  import { act, load, ui } from '../ui.svelte'
   import { plural } from '../flow'
   import TopBar from '../components/TopBar.svelte'
   import ThemeToggle from '../components/ThemeToggle.svelte'
@@ -9,22 +9,26 @@
   import SystemCard from '../home/SystemCard.svelte'
   import NewSystemForm from '../home/NewSystemForm.svelte'
 
-  type System = { node: Node; doc: string; children: Node[] }
+  type System = { node: Node; doc: string; inside: Node[] }
   let systems = $state.raw<System[]>()
   let adding = $state(false)
 
   // Systems are the children of root 1; the root itself is never shown.
   // shortcut: 2N+1 requests (root graph, then node + graph per system); replace with GET /api/home when the backend grows it.
-  act(api.graph(1).then(g => Promise.all(g.nodes.map(async n => {
+  ui.error = '' // a banner from the previous page is not about this one
+  load(api.graph(1).then(g => Promise.all(g.nodes.map(async n => {
     const [detail, graph] = await Promise.all([api.node(n.id), api.graph(n.id)])
-    return { node: n, doc: detail.doc, children: graph.nodes }
+    return { node: n, doc: detail.doc, inside: graph.nodes }
   }))).then(s => { systems = s }))
   document.title = 'knotbase'
 
   async function create(name: string, desc: string) {
     let id = 0
-    // shortcut: two requests because POST /api/nodes takes no doc yet; send it in the POST once the backend accepts it.
-    const ok = await act(api.createNode({ parent_id: 1, name, kind: 'system' }).then(async n => { id = n.id; if (desc) await api.updateNode(n.id, { doc: desc }) }))
+    // shortcut: two requests because POST /api/nodes takes no doc yet; a failed doc PATCH rolls the new system back so a retry can't duplicate it. Send doc in the POST once the backend accepts it.
+    const ok = await act(api.createNode({ parent_id: 1, name, kind: 'system' }).then(async n => {
+      id = n.id
+      if (desc) await api.updateNode(n.id, { doc: desc }).catch(async e => { await api.deleteNode(n.id).catch(() => {}); throw e })
+    }))
     if (ok) navigate(`/node/${id}`)
     return ok
   }
@@ -46,7 +50,7 @@
     {#if adding}<NewSystemForm onCreate={create} onCancel={() => (adding = false)} />{/if}
     {#if systems}
       <div class="grid">
-        {#each systems as s (s.node.id)}<SystemCard node={s.node} doc={s.doc} children={s.children} />{/each}
+        {#each systems as s (s.node.id)}<SystemCard node={s.node} doc={s.doc} inside={s.inside} />{/each}
         <button class="new-card" onclick={() => (adding = true)}>
           <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"></path></svg>
           New system
