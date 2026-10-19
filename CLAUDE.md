@@ -9,7 +9,7 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 
 ## Run, test, build
 - Setup (once): `cd frontend && npm ci`
-- Dev: `npm start` from the repo root, same as `./dev.sh` (Vite :5173 proxies `/api` to Rust :3000), open http://localhost:5173.
+- Dev: `npm start` from the repo root, same as `./dev.sh` (Vite :5025 proxies `/api` to Rust :3000), open http://localhost:5025.
 - Backend (in `backend/`): `cargo run`, `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
 - Frontend (in `frontend/`): `npm run dev`, `npm run build` (`svelte-check` then `vite build`; the only frontend gate, and all CI runs). `npm run check` also type-checks `vite.config.ts`, which CI does not.
 - Prod: `cd frontend && npm run build`, then `cd backend && cargo run --release`, open http://localhost:3000.
@@ -52,7 +52,9 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 A handler plus a route in the resource file under `backend/src/`, plus one line in `frontend/src/api.ts`.
 
 ## UI
-One page, `frontend/src/NodePage.svelte`, rendered at every depth on `/node/:id` (`/` is `/node/1`).
+- Two pages under `frontend/src/pages/`, routed by `App.svelte`: `HomePage.svelte` at `/` (the systems grid: a system is a child of root 1 with kind `system`; root 1 itself is never shown and `/node/1` redirects to `/`) and `NodePage.svelte` at `/node/:id` (canvas left, inspector right, rendered at every depth).
+- Components by area: `components/` (Button, Link, Swatch, TopBar, ThemeToggle), `graph/` (xyflow canvas, card, add-node popover, legend, help), `inspector/` (node and edge inspectors and their sections), `home/` (system card, new-system form).
+- Shared state: `ui.svelte.ts` (error banner + `act()` for mutations), `theme.svelte.ts` (notebook/console, persisted in localStorage), `nav.svelte.ts` (history). Look tokens live in `app.css`: `:root` is the light "notebook", `[data-theme=console]` the dark one.
 
 ## Rules
 - Runtime `sqlx::query_as` only, never `query!` macros (no `DATABASE_URL` at build, no `.sqlx/`).

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import type { HTMLAnchorAttributes } from 'svelte/elements'
-  import { navigate } from './nav.svelte'
+  import { navigate } from '../nav.svelte'
 
   let { href, children, ...rest }: { href: string; children: Snippet } & HTMLAnchorAttributes = $props()
 

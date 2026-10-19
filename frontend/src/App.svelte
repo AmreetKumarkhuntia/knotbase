@@ -1,9 +1,15 @@
 <script lang="ts">
-  import { nav } from './nav.svelte'
-  import NodePage from './NodePage.svelte'
+  import { nav, navigate } from './nav.svelte'
+  import HomePage from './pages/HomePage.svelte'
+  import NodePage from './pages/NodePage.svelte'
 
-  // shortcut: one route; switch to a router lib when nested layouts or more than ~3 routes appear.
-  const id = $derived(Number(nav.path.match(/^\/node\/(\d+)\/?$/)?.[1] ?? 1))
+  // shortcut: two routes by regex; switch to a router lib when nested layouts or more than ~3 routes appear.
+  const id = $derived(Number(nav.path.match(/^\/node\/(\d+)\/?$/)?.[1] ?? 0))
+  $effect(() => { if (id === 1) navigate('/') }) // root 1 is the hidden Home container
 </script>
 
-<NodePage {id} />
+{#if id > 1}
+  {#key id}<NodePage {id} />{/key}
+{:else}
+  <HomePage />
+{/if}

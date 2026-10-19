@@ -1,16 +1,16 @@
 <script lang="ts">
   import { Handle, Position, type Node, type NodeProps } from '@xyflow/svelte'
-  import Link from './Link.svelte'
+  import Swatch from '../components/Swatch.svelte'
+  import type { Node as ApiNode } from '../api'
 
-  type Card = Node<{ name: string; kind: string }, 'card'>
-  let { id, data, selected }: NodeProps<Card> = $props()
+  type Card = Node<{ node: ApiNode }, 'card'>
+  let { data, selected }: NodeProps<Card> = $props()
 </script>
 
-<div class="card" class:selected style:--kind="var(--kind-{data.kind}, var(--kind-default))">
+<!-- keyboard path: Tab to the node, Enter selects it, the inspector's Open button goes inside -->
+<div class="card" class:selected title="Drag to move · double-click to open" style:--kind="var(--kind-{data.node.kind}, var(--muted))">
   <Handle type="target" position={Position.Left} />
-  <span>{data.name}</span>
-  <span class="chip">{data.kind}</span>
-  <!-- keyboard and cmd-click path in; double-click on the card does the same -->
-  <Link href="/node/{id}" class="open nodrag" aria-label="Open {data.name}">open</Link>
+  <span class="name">{data.node.name}</span>
+  <span class="kind"><Swatch kind={data.node.kind} />{data.node.kind}</span>
   <Handle type="source" position={Position.Right} />
 </div>
