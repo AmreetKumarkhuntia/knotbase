@@ -20,7 +20,7 @@ use tower_http::services::{ServeDir, ServeFile};
 async fn loopback_host(req: Request, next: Next) -> Response {
     let ok = req.headers().get(HOST).is_none_or(|h| {
         let h = h.to_str().unwrap_or_default();
-        // strip a numeric port only: `[::1]:5173` -> `[::1]`, bare `[::1]` stays whole
+        // strip a numeric port only: `[::1]:5025` -> `[::1]`, bare `[::1]` stays whole
         let name = h
             .rsplit_once(':')
             .filter(|(_, port)| port.bytes().all(|b| b.is_ascii_digit()))
@@ -38,7 +38,7 @@ pub fn app(pool: SqlitePool, dist: &str) -> Router {
     let index = format!("{dist}/index.html");
     if !std::path::Path::new(&index).exists() {
         eprintln!(
-            "warning: {index} missing; UI not served on this port (fine in dev, Vite serves it on :5173)"
+            "warning: {index} missing; UI not served on this port (fine in dev, Vite serves it on :5025)"
         );
     }
     let api = Router::new()

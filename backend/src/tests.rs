@@ -272,10 +272,10 @@ async fn host_guard_allows_only_loopback() {
         ("evil.example:3000", StatusCode::FORBIDDEN),
         ("evil.example", StatusCode::FORBIDDEN),
         ("localhost.evil.example", StatusCode::FORBIDDEN),
-        ("localhost:5173", StatusCode::OK),
+        ("localhost:5025", StatusCode::OK),
         ("localhost", StatusCode::OK),
         ("127.0.0.1:3000", StatusCode::OK),
-        ("[::1]:5173", StatusCode::OK),
+        ("[::1]:5025", StatusCode::OK),
         ("[::1]", StatusCode::OK),
     ] {
         let req = Request::get("/api/nodes/1/graph")

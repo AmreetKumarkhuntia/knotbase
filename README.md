@@ -4,7 +4,7 @@ Explore a system as nested graphs: every node holds a graph of child nodes, mark
 
 **Setup (once):** `cd frontend && npm ci`
 
-**Dev:** `npm start` (or `./dev.sh`), then open http://localhost:5173.
+**Dev:** `npm start` (or `./dev.sh`), then open http://localhost:5025.
 
 **Prod:**
 ```sh
