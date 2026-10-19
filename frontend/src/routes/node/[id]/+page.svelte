@@ -1,5 +1,6 @@
 <script lang="ts">
   import { LevelState, provideLevel } from '$lib/stores/level.svelte'
+  import { data } from '$lib/stores/data.svelte'
   import { notify } from '$lib/stores/notify.svelte'
   import { shell } from '$lib/stores/shell.svelte'
   import { plural } from '$lib/utils/format'
@@ -9,16 +10,22 @@
   import NodeFlow from '$lib/widgets/NodeFlow.svelte'
   import Inspector from '$lib/widgets/inspector/Inspector.svelte'
 
-  // App keys this page by id, so every level starts with fresh state; the widgets share it through context.
+  // App keys this page by id, so every level starts with fresh UI state; the data comes from the store (and the cache survives).
   let { id }: { id: number } = $props()
   notify.error = '' // a banner from the previous page is not about this one
   const level = new LevelState(() => id)
   provideLevel(level)
+  const failed = $derived(typeof data.status(`node:${id}`) === 'object')
   $effect(() => {
     const g = level.graph
     shell.crumbs = level.node?.breadcrumb ?? []
     shell.stats = g ? `${plural(g.nodes.length, 'node')} · ${plural(g.edges.length, 'connection')}` : ''
-    shell.action = { label: 'Add node', icon: 'plus', disabled: !g, onClick: () => (level.adding = !level.adding) }
+    shell.action = {
+      label: 'Add node',
+      icon: 'plus',
+      disabled: !level.node,
+      onClick: () => (level.adding = !level.adding),
+    }
   })
 </script>
 
@@ -41,7 +48,7 @@
     </section>
     <aside class="inspector" aria-label="Inspector"><Inspector /></aside>
   </main>
-{:else if level.level.error}
+{:else if failed}
   <main class="cover static">
     <EmptyCard title="This node can't be loaded" text="It may have been deleted, or the server is down.">
       <Button href="/" variant="primary">Back to Home</Button>

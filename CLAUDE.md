@@ -1,4 +1,4 @@
-# knotbase
+| `lib/stores/` | reactive state as `.svelte.ts`: `data` (the one read path: a cache of nodes, graphs and systems; a miss emits `get:*`), `router`, `theme`, `notify`, `shell`, and per node page `LevelState` (selection, popover; provided via context) | events, utils || `lib/services/` | the central event listener: `api.ts` (HTTP) and one handler module per resource (`nodes`, `edges`, `items`, `systems`) registered by `listen.ts` from `main.ts`; the only code that calls the API (lint-enforced) | `api.ts`, stores, events |# knotbase
 
 Graph-first system explorer: a tree of nodes, each with a child graph, markdown doc and checklist. Full design: `docs/Implementation-plan.md`.
 
@@ -64,7 +64,9 @@ A handler plus a route in the resource file under `backend/src/`, plus one line 
 | `lib/utils/` | pure helpers and the form helpers | nothing |
 | `lib/styles/` | `tokens.css` (the two palettes), `base.css` (reset, element defaults, the closed set of utilities), `xyflow.css` (library overrides): the only global CSS | |
 
-Rules: no inline `<svg>` outside `Icon.svelte`; navigation is a plain `<a href>` (the router store delegates same-origin clicks); forms use `submitGuard`, `escape` and `focus`; mutations go through `LevelState.change()` (or `act()`), which clears the banner first, fetches through `load()` or `NodeData`, which never clear it; `:global` only for xyflow internals and rendered markdown.
+Data flow: the UI reads only `data.node(id)`, `data.graph(id)`, `data.systems()`; a miss schedules the matching `get:*` event; a write is `bus.emit('post:|patch:|delete:…', payload)` and resolves to what the UI needs next. Event names mirror the API table: `get:node` `get:graph` `get:systems` `post:node` `patch:node` `patch:nodes` `delete:node` `delete:many` `post:edge` `patch:edge` `delete:edge` `post:item` `patch:item` `delete:item` `post:system`; the contract is `lib/events/types.ts`, the bus `lib/events/bus.ts` (one handler per event, `emit` returns its promise, dev logs `[event] …`). A mutation handler calls the API through `act()` and then `data.refresh()`es the keys it touched.
+
+Rules: no inline `<svg>` outside `Icon.svelte`; navigation is a plain `<a href>` (the router store delegates same-origin clicks); forms use `submitGuard`, `escape` and `focus`; mutation handlers clear the banner first and set it on failure, get handlers only set a per-key status in `data`; `:global` only for xyflow internals and rendered markdown.
 ## Rules
 - Runtime `sqlx::query_as` only, never `query!` macros (no `DATABASE_URL` at build, no `.sqlx/`).
 - The schema is the validator: CHECK and FK constraints, mapped to 400. No hand-written validators.

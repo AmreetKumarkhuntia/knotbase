@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ApiEdge } from '$lib/services/api'
+  import { bus } from '$lib/events/bus'
   import { useLevel } from '$lib/stores/level.svelte'
   import Head from '$lib/components/Head.svelte'
   import Button from '$lib/components/Button.svelte'
@@ -9,6 +10,10 @@
   const level = useLevel()
   let label = $derived(edge.label) // writable: the draft resets when another edge is selected
   const name = (id: number) => level.graph?.nodes.find((n) => n.id === id)?.name ?? '?'
+
+  async function remove() {
+    if (await bus.emit('delete:edge', { id: edge.id, parent_id: edge.parent_id })) level.select(null)
+  }
 </script>
 
 <Head onClear={() => level.select(null)}>
@@ -19,7 +24,7 @@
     class="field"
     onsubmit={(e) => {
       e.preventDefault()
-      level.setEdgeLabel(edge.id, label.trim())
+      bus.emit('patch:edge', { id: edge.id, parent_id: edge.parent_id, label: label.trim() })
     }}
   >
     <label for="edge-label">Label</label>
@@ -28,7 +33,7 @@
       <Button variant="primary" type="submit">Save</Button>
     </div>
   </form>
-  <div class="row"><Button variant="danger" onclick={() => level.removeEdge(edge.id)}>Remove connection</Button></div>
+  <div class="row"><Button variant="danger" onclick={remove}>Remove connection</Button></div>
 </Head>
 <p class="note muted">Connections carry a label only. Docs and items belong to the nodes at either end.</p>
 

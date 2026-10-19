@@ -1,13 +1,12 @@
 <script lang="ts">
   import { tick } from 'svelte'
   import { marked } from 'marked'
-  import { nodes } from '$lib/services/nodes'
+  import { bus } from '$lib/events/bus'
   import { focus } from '$lib/utils/form.svelte'
   import Section from '$lib/components/Section.svelte'
   import Button from '$lib/components/Button.svelte'
 
-  let { id, doc, change }: { id: number; doc: string; change: (fn: () => Promise<unknown>) => Promise<boolean> } =
-    $props()
+  let { id, doc }: { id: number; doc: string } = $props()
   let editing = $state(false)
   let draft = $state('')
   let editBtn = $state<HTMLButtonElement>()
@@ -26,7 +25,7 @@
   // stay in the editor on failure so the text isn't lost
   async function save(e: SubmitEvent) {
     e.preventDefault()
-    if (await change(() => nodes.setDoc(id, draft))) close()
+    if (await bus.emit('patch:node', { id, patch: { doc: draft } })) close()
   }
 </script>
 

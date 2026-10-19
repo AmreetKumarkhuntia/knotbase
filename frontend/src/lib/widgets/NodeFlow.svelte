@@ -17,11 +17,12 @@
   import AddNodeForm from '$lib/components/AddNodeForm.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import SelectionSync from './SelectionSync.svelte'
+  import { bus } from '$lib/events/bus'
   import { navigate } from '$lib/stores/router.svelte'
   import { useLevel } from '$lib/stores/level.svelte'
   import '$lib/styles/xyflow.css'
 
-  // The canvas for the current level: xyflow fed from LevelState, every change reported back to it.
+  // The canvas for the current level: xyflow fed from the level's graph, every change emitted as an event.
   const level = useLevel()
   const nodeTypes: NodeTypes = { card: CardNode }
   let rfNodes = $state.raw<Node[]>([])
@@ -29,8 +30,8 @@
   let showHelp = $state(false)
 
   $effect(() => {
-    // server truth wins after every refetch; the previous element is carried over so selection and measured size survive
-    // shortcut: a refetch landing mid-drag resets that drag; fine single-user with no polling, skip the overwrite while dragging if polling arrives.
+    // server truth wins after every refresh; the previous element is carried over so selection and measured size survive
+    // shortcut: a refresh landing mid-drag resets that drag; fine single-user with no polling, skip the overwrite while dragging if polling arrives.
     const graph = level.graph
     if (!graph) return
     const prevN = new Map(untrack(() => rfNodes).map((n) => [n.id, n]))
@@ -54,6 +55,20 @@
       markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--edge)' },
     }))
   })
+
+  const move = (nodes: Node[]) =>
+    bus.emit('patch:nodes', {
+      parent_id: level.id,
+      moves: nodes.map((n) => ({ id: Number(n.id), x: n.position.x, y: n.position.y })),
+    })
+  async function add(name: string, kind: string) {
+    const created = await bus.emit('post:node', { parent_id: level.id, name, kind })
+    if (created) {
+      level.adding = false
+      level.select({ type: 'node', id: created.id })
+    }
+    return !!created
+  }
 </script>
 
 <!-- arrow keys move selected nodes without firing onnodedragstop, so persist them on keyup -->
@@ -62,7 +77,7 @@
   role="presentation"
   onkeyup={(e) => {
     const moved = e.key.startsWith('Arrow') ? rfNodes.filter((n) => n.selected) : []
-    if (moved.length) level.move(moved.map((n) => ({ id: Number(n.id), x: n.position.x, y: n.position.y })))
+    if (moved.length) move(moved)
   }}
 >
   <SvelteFlow
@@ -72,9 +87,9 @@
     fitView
     fitViewOptions={{ maxZoom: 1 }}
     isValidConnection={(c) => c.source !== c.target}
-    onnodedragstop={({ nodes }) =>
-      level.move(nodes.map((n) => ({ id: Number(n.id), x: n.position.x, y: n.position.y })))}
-    onconnect={(c: Connection) => level.connect(Number(c.source), Number(c.target))}
+    onnodedragstop={({ nodes }) => move(nodes)}
+    onconnect={(c: Connection) =>
+      bus.emit('post:edge', { parent_id: level.id, source_id: Number(c.source), target_id: Number(c.target) })}
     onbeforedelete={async ({ nodes, edges }) =>
       confirm(
         nodes.length
@@ -83,10 +98,11 @@
       )}
     ondelete={({ nodes, edges }) => {
       const gone = new Set(nodes.map((n) => n.id)) // cascaded edges must not be deleted twice
-      level.remove(
-        nodes.map((n) => Number(n.id)),
-        edges.filter((e) => !gone.has(e.source) && !gone.has(e.target)).map((e) => Number(e.id)),
-      )
+      bus.emit('delete:many', {
+        parent_id: level.id,
+        nodeIds: nodes.map((n) => Number(n.id)),
+        edgeIds: edges.filter((e) => !gone.has(e.source) && !gone.has(e.target)).map((e) => Number(e.id)),
+      })
     }}
     onnodeclick={({ node, event }) => {
       if (event.detail === 2) navigate(`/node/${node.id}`)
@@ -119,7 +135,7 @@
   <Legend />
   {#if showHelp}<HelpPanel />{/if}
   {#if level.adding}
-    <AddNodeForm levelName={level.node?.name ?? ''} onAdd={level.addNode} onCancel={() => (level.adding = false)} />
+    <AddNodeForm levelName={level.node?.name ?? ''} onAdd={add} onCancel={() => (level.adding = false)} />
   {/if}
 </div>
 

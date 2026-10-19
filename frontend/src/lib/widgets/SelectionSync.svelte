@@ -5,12 +5,14 @@
 
   // Pushes LevelState.selection into xyflow through its own selection API (writing the bound arrays from an effect is not
   // picked up by its memoised selection). Must be rendered inside <SvelteFlow>. Applies only when the primary selected
-  // element differs, so a box multi-select survives; xyflow reports the result back through onselectionchange.
+  // element differs, so a box multi-select survives; re-checks when the node list changes, so a selection made before a
+  // refresh lands (a just-added card) is applied once the card exists. xyflow reports the result back through onselectionchange.
   const store = useStore()
   const level = useLevel()
 
   $effect(() => {
     const sel = level.selection
+    if (!level.graph) return // also the dependency that re-applies after a refresh rebuilt the canvas (never xyflow's own array: that fires before it reports a click)
     untrack(() => {
       const node = store.selectedNodes[0]?.id
       const edge = store.selectedEdges[0]?.id

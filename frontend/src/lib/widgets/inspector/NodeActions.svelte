@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { bus } from '$lib/events/bus'
   import { navigate } from '$lib/stores/router.svelte'
   import { useLevel } from '$lib/stores/level.svelte'
-  import { nodes } from '$lib/services/nodes'
   import { focus } from '$lib/utils/form.svelte'
   import Button from '$lib/components/Button.svelte'
   import Icon from '$lib/components/Icon.svelte'
@@ -9,17 +9,11 @@
   // Title, meta line and the actions on one node: rename inline, open, delete with an inline confirm.
   let {
     id,
+    parentId,
     name,
     meta,
     isLevel,
-    change,
-  }: {
-    id: number
-    name: string
-    meta: string
-    isLevel: boolean
-    change: (fn: () => Promise<unknown>) => Promise<boolean>
-  } = $props()
+  }: { id: number; parentId: number | null; name: string; meta: string; isLevel: boolean } = $props()
   const level = useLevel()
   let renaming = $state(false)
   let draft = $state('')
@@ -27,7 +21,16 @@
 
   async function rename(e: SubmitEvent) {
     e.preventDefault()
-    if (draft.trim() && (await change(() => nodes.rename(id, draft.trim())))) renaming = false
+    if (draft.trim() && (await bus.emit('patch:node', { id, patch: { name: draft.trim() } }))) renaming = false
+  }
+  // deleting the level itself goes up a crumb; deleting a selected card clears the selection.
+  // Decide before awaiting: the refresh inside the handler can clear the selection and re-key this inspector to the level.
+  async function remove() {
+    const atLevel = isLevel
+    const up = level.node?.breadcrumb.at(-2)
+    if (!(await bus.emit('delete:node', { id, parent_id: parentId ?? 1 }))) return
+    if (atLevel) navigate(up && up.id !== 1 ? `/node/` : '/')
+    else level.select(null)
   }
 </script>
 
@@ -46,7 +49,7 @@
   <div class="confirm">
     <span>Delete <b>{name}</b> and everything inside it? This can't be undone.</span>
     <div class="row">
-      <Button variant="danger-fill" onclick={() => level.removeNode(id)}>Delete</Button>
+      <Button variant="danger-fill" onclick={remove}>Delete</Button>
       <Button onclick={() => (confirming = false)}>Cancel</Button>
     </div>
   </div>

@@ -19,6 +19,24 @@ export default ts.config(
     },
   },
   { ignores: ['dist/'] },
+  // only lib/services talks to the API: everything else reads $lib/stores/data and emits events on $lib/events/bus
+  {
+    files: ['src/routes/**', 'src/lib/components/**', 'src/lib/widgets/**', 'src/lib/stores/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['$lib/services/*', '**/services/*'],
+              allowTypeImports: true,
+              message: 'Read from $lib/stores/data and emit on $lib/events/bus; only lib/services calls the API.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // not SvelteKit: there is no $app/paths resolve() for hrefs
   { rules: { 'svelte/no-navigation-without-resolve': 'off', 'svelte/valid-prop-names-in-kit-pages': 'off' } },
 )
