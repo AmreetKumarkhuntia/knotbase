@@ -1,7 +1,8 @@
 import { bus } from '$lib/events/bus'
 import { data, type Key } from '$lib/stores/data.svelte'
 import { act } from '$lib/stores/notify.svelte'
-import { api, type ApiNode } from './api'
+import { api } from './api'
+import type { ApiNode } from '$lib/types'
 
 // the keys a change under `parent` shows up in: its graph, and Home when the parent is the root or a system (a card shows its top level)
 const under = (parent: number | null): Key[] =>

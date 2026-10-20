@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ApiNode } from '$lib/services/api'
+  import type { ApiNode } from '$lib/types'
   import Section from '$lib/components/Section.svelte'
   import Swatch from '$lib/components/Swatch.svelte'
   import Icon from '$lib/components/Icon.svelte'

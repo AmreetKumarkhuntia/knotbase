@@ -3,7 +3,7 @@
   import Swatch from '$lib/components/Swatch.svelte'
   import { kindColor } from '$lib/utils/kinds'
   import { CARD } from '$lib/utils/layout'
-  import type { ApiNode } from '$lib/services/api'
+  import type { ApiNode } from '$lib/types'
 
   type Card = Node<{ node: ApiNode }, 'card'>
   let { data, selected }: NodeProps<Card> = $props()

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Item } from '$lib/services/api'
+  import type { Item } from '$lib/types'
   import { bus } from '$lib/events/bus'
   import { submitGuard } from '$lib/utils/form.svelte'
   import Section from '$lib/components/Section.svelte'

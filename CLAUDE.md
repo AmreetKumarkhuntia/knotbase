@@ -65,7 +65,7 @@ Portable SQL: a service runs one sqlx expression through `sql!(db, |pool| …)`,
 - `frontend/src/lib/services/api.ts` `req()` handles both error shapes.
 
 ## Add an endpoint
-A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route in `backend/src/routes/<resource>.rs`, and one line in `frontend/src/lib/services/api.ts`. A new resource also needs its structs in `types/x.rs` with `pub mod x;` in `types/mod.rs`, `pub(crate) mod x;` in `services/mod.rs` and `mod x;` plus `.merge(x::router())` in `routes/mod.rs`; a new table or column is one migration per engine and a field on the struct.
+A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route in `backend/src/routes/<resource>.rs`, and one line in `frontend/src/lib/services/api.ts` (a new body shape goes in `frontend/src/lib/types/index.ts`). A new resource also needs its structs in `types/x.rs` with `pub mod x;` in `types/mod.rs`, `pub(crate) mod x;` in `services/mod.rs` and `mod x;` plus `.merge(x::router())` in `routes/mod.rs`; a new table or column is one migration per engine and a field on the struct.
 
 ## UI
 `frontend/src/` follows the SvelteKit idiom without SvelteKit (`$lib` alias in vite and tsconfig). `App.svelte` is the hand router: `/` → `routes/+page.svelte`, `/node/:id` → `routes/node/[id]/+page.svelte`, both inside `routes/+layout.svelte`; `/node/1` redirects to `/` because systems are the children of root 1 and the root is never shown.
@@ -73,11 +73,12 @@ A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route
 | Folder | Holds | May import |
 |---|---|---|
 | `routes/` | the layout (the one navbar, fed by the shell store) and one file per page; a page composes widgets and sets its navbar chrome in the shell store, owns nothing reusable | widgets, components, stores |
-| `lib/components/` | presentational: props in, callbacks out, scoped `<style>`; no store or service imports | components, utils |
+| `lib/components/` | presentational: props in, callbacks out, scoped `<style>`; no store or service imports | components, utils, types |
 | `lib/widgets/` | composites wired to state: read stores, call services, compose components (NodeFlow, SystemGrid, `inspector/*`) | everything below |
-| `lib/services/` | the central event listener: `api.ts` (HTTP), one handler module per resource (`nodes`, `edges`, `items`, `systems`) plus `nav`, `ui` and `telemetry`, registered by `listen.ts` from `main.ts`; the only code that calls the API, `navigate()` or `toggleTheme()` (lint-enforced) | `api.ts`, stores, events |
-| `lib/stores/` | reactive state as `.svelte.ts`: `data` (the one read path: a cache of nodes, graphs and systems; a miss emits `get:*`), `router`, `theme`, `notify`, `shell`, and per node page `LevelState` (selection, popover; provided via context) | events, utils |
-| `lib/events/` | `bus.ts` (the typed request/response bus: `on`, `emit`, `tap`) and `types.ts` (the event contract) | nothing |
+| `lib/services/` | the central event listener: `api.ts` (HTTP), one handler module per resource (`nodes`, `edges`, `items`, `systems`) plus `nav`, `ui` and `telemetry`, registered by `listen.ts` from `main.ts`; the only code that calls the API, `navigate()` or `toggleTheme()` (lint-enforced) | `api.ts`, stores, events, types |
+| `lib/stores/` | reactive state as `.svelte.ts`: `data` (the one read path: a cache of nodes, graphs and systems; a miss emits `get:*`), `router`, `theme`, `notify`, `shell`, and per node page `LevelState` (selection, popover; provided via context) | events, utils, types |
+| `lib/events/` | `bus.ts` (the typed request/response bus: `on`, `emit`, `tap`) and `types.ts` (the event contract) | types |
+| `lib/types/` | the data shapes as `index.ts`: the five API bodies (`ApiNode`, `ApiEdge`, `Item`, `Graph`, `NodeDetail`, a mirror of `backend/src/types/`) plus the client-side `System` and `Move`; types only | nothing |
 | `lib/utils/` | pure helpers and the form helpers | nothing |
 | `lib/styles/` | `tokens.css` (the two palettes), `base.css` (reset, element defaults, the closed set of utilities), `xyflow.css` (library overrides): the only global CSS | |
 

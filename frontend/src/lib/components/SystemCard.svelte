@@ -2,7 +2,7 @@
   import { kindColor } from '$lib/utils/kinds'
   import { CARD } from '$lib/utils/layout'
   import { plural } from '$lib/utils/format'
-  import type { System } from '$lib/events/types'
+  import type { System } from '$lib/types'
 
   let { system }: { system: System } = $props()
   const TW = 232,

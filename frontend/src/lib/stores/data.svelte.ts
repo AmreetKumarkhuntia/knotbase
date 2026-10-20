@@ -1,7 +1,6 @@
 import { SvelteMap } from 'svelte/reactivity'
 import { bus } from '$lib/events/bus'
-import type { System } from '$lib/events/types'
-import type { Graph, NodeDetail } from '$lib/services/api'
+import type { Graph, NodeDetail, System } from '$lib/types'
 
 // The one read path for data. A read returns what is cached; a miss schedules the matching get:* event in a microtask
 // (never a reactive write during a read), one request per key at a time. Handlers write back through set* and ask for

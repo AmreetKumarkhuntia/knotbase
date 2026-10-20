@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ApiEdge } from '$lib/services/api'
+  import type { ApiEdge } from '$lib/types'
   import { bus } from '$lib/events/bus'
   import { useLevel } from '$lib/stores/level.svelte'
   import Head from '$lib/components/Head.svelte'

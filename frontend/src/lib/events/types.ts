@@ -1,10 +1,8 @@
-import type { ApiNode } from '$lib/services/api'
+import type { ApiNode, Move } from '$lib/types'
 
 // The whole frontend contract: one entry per event. Data events mirror the API table in CLAUDE.md; get:* events fill the
 // data store and resolve to nothing; writes resolve to what the UI needs next. Navigation and UI actions ride the same bus,
 // so one place decides where things go and telemetry sees everything.
-export type System = { node: ApiNode; doc: string; inside: ApiNode[] }
-export type Move = { id: number; x: number; y: number }
 
 export type Events = {
   'get:node': { payload: { id: number }; result: void }

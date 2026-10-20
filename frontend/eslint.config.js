@@ -29,7 +29,6 @@ export default ts.config(
           patterns: [
             {
               group: ['$lib/services/*', '**/services/*'],
-              allowTypeImports: true,
               message: 'Read from $lib/stores/data and emit on $lib/events/bus; only lib/services calls the API.',
             },
           ],
@@ -47,7 +46,6 @@ export default ts.config(
           patterns: [
             {
               group: ['$lib/services/*', '**/services/*'],
-              allowTypeImports: true,
               message: 'Read from $lib/stores/data and emit on $lib/events/bus; only lib/services calls the API.',
             },
             {
