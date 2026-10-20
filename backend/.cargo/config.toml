@@ -1,3 +1,0 @@
-# The tests run serially: on Postgres they share one database that each test truncates (TEST_DATABASE_URL); on SQLite the suite takes 20 ms anyway.
-[env]
-RUST_TEST_THREADS = "1"
