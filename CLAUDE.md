@@ -1,4 +1,4 @@
-| `lib/stores/` | reactive state as `.svelte.ts`: `data` (the one read path: a cache of nodes, graphs and systems; a miss emits `get:*`), `router`, `theme`, `notify`, `shell`, and per node page `LevelState` (selection, popover; provided via context) | events, utils || `lib/services/` | the central event listener: `api.ts` (HTTP) and one handler module per resource (`nodes`, `edges`, `items`, `systems`) registered by `listen.ts` from `main.ts`; the only code that calls the API (lint-enforced) | `api.ts`, stores, events |# knotbase
+# knotbase
 
 Graph-first system explorer: a tree of nodes, each with a child graph, markdown doc and checklist. Full design: `docs/Implementation-plan.md`.
 
@@ -11,10 +11,10 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 - Setup (once): `cd frontend && npm ci`
 - Dev: `npm start` from the repo root, same as `./dev.sh` (Vite :5025 proxies `/api` to Rust :3000), open http://localhost:5025.
 - Backend (in `backend/`): `cargo run`, `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
-- Backend on Postgres: `createdb knotbase` once, then `DATABASE_URL=postgres://$USER@localhost/knotbase cargo run`. Tests on Postgres: `createdb knotbase_test` once, then `TEST_DATABASE_URL=postgres://$USER@localhost/knotbase_test cargo test -- --test-threads=1` (the tests share that database; CI runs the suite on both engines).
+- Backend on Postgres: `createdb knotbase` once, then `DATABASE_URL=postgres://$USER@localhost/knotbase cargo run`. Tests on Postgres: `createdb knotbase_test` once, then `TEST_DATABASE_URL=postgres://$USER@localhost/knotbase_test cargo test` (the tests are serial and truncate that database before every test, so its name must contain `_test`; CI runs the suite on both engines).
 - Frontend (in `frontend/`): `npm run dev`, `npm run lint` (Prettier check then ESLint; CI runs it), `npm run format` (Prettier write), `npm run build` (`svelte-check` then `vite build`; CI runs it). `npm run check` also type-checks `vite.config.ts`, which CI does not.
 - Prod: `cd frontend && npm run build`, then `cd backend && cargo run --release`, open http://localhost:3000.
-- Seed: `sqlite3 backend/knotbase.db < backend/seed.sql` after one backend run, on an empty DB (all-or-nothing; a rerun fails cleanly). Reset: `rm backend/knotbase.db*`. Postgres: `psql -1 -v ON_ERROR_STOP=1 -d knotbase -f backend/seed.postgres.sql`; reset: `dropdb knotbase`.
+- Seed: `sqlite3 backend/knotbase.db < backend/seed.sql` after one backend run, on an empty DB (all-or-nothing; a rerun fails cleanly). Reset: `rm backend/knotbase.db*`. Postgres: run the backend once (it creates the tables), then `psql -1 -v ON_ERROR_STOP=1 -d knotbase -f backend/seed.postgres.sql`; reset: `dropdb knotbase && createdb knotbase`.
 - Env (read in `backend/src/config.rs`): `STATIC_DIR` (default `<repo>/frontend/dist`) and `DATABASE_URL` (default `sqlite:<repo>/backend/knotbase.db?mode=rwc`). The URL scheme picks the engine: `sqlite:` (without `?mode=rwc` a missing file is not created) or `postgres://user@host/db` (the database must exist; sqlx does not take the OS user, so name one in the URL or set `PGUSER`). Both defaults are absolute (baked from `CARGO_MANIFEST_DIR`); a value you set is used as written, relative to the working directory (`backend/` under `cargo run`), so prefer absolute paths.
 - `.playwright-mcp/` at the repo root is output from browser tools; it is gitignored, so never committed.
 
@@ -24,12 +24,12 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 | Folder | Holds | May import |
 |---|---|---|
 | `src/routes/` | Axum: `app()` (the `/api` router, the static UI, the host guard) and one file per resource with its `router()` and thin handlers: extract, call a service, answer with a status and `Json` | services, db, error |
-| `src/services/` | one file per resource: the row structs (they are the API bodies too) and `pub async fn`s over `&Db`; the only SQL in the crate | db, error |
+| `src/services/` | one file per resource: the row structs (they are the API bodies too) and `pub async fn`s over `&Db`; the only SQL in the crate | db, error, sibling services |
 | `src/services/db.rs` | the one database interface: `enum Db`, a variant per engine with its native pool; `connect(url, max)` picks the variant from the URL scheme and runs that engine's `migrations/<engine>/`; `with_now()` and the `sql!` macro | sqlx |
 | `src/config.rs` | `Config::from_env()`: every environment variable the binary reads, with its default; the only place `std::env` is read | |
 | `migrations/<engine>/` | the same schema per engine, same version numbers (`sqlite/`, `postgres/`) | |
 
-Portable SQL: a service runs one sqlx chain through `sql!(db, p => …)`, which expands once per engine, so the SQL text must work on every engine: `$n` placeholders in ascending order, `RETURNING`, `COALESCE`, `WITH RECURSIVE`, `{now}` through `db.with_now()` for the current time, nothing else engine-specific; the chain ends in a row struct, a scalar or `()`, never a driver row. The Postgres test run is the lint. Adding an engine: its sqlx feature, a `Db` variant, an arm in `connect()`, `now()` and `sql!`, and a migrations directory; services stay untouched.
+Portable SQL: a service runs one sqlx expression through `sql!(db, |pool| …)`, which expands once per engine, so the SQL text must work on every engine: `$n` placeholders, `RETURNING`, `COALESCE`, `WITH RECURSIVE`, `{now}` through `db.with_now()` for the current time, nothing else engine-specific; the expression (a chain, or a block with a transaction) ends in a row struct, a scalar or `()`, never a driver row. The Postgres test run is the lint. Engine traps: booleans in SQL text (bind a `bool` or write bare `WHERE done`, never `= 1`; count with `COUNT(*) FILTER (WHERE done)`, never `SUM`), `COALESCE($n, col)` can never set a column back to NULL (keep columns `NOT NULL` with a default), and the `graph` query names the node columns, so a new column goes there too. Adding an engine: its sqlx feature, a `Db` variant, an arm in `connect()`, `now()` and `sql!`, and a migrations directory; services stay untouched.
 
 ## Data model
 - `node`: recursive table, id 1 is the root "System", every other node has a `parent_id`. Carries `doc` (markdown) and x/y.
@@ -57,13 +57,14 @@ Portable SQL: a service runs one sqlx chain through `sql!(db, p => …)`, which 
   - missing or mistyped field, or an unknown PATCH field (e.g. `{"parent_id":5}`): 422
   - no `content-type: application/json`: 415
   - non-numeric `{id}`: 400
+  - body over 2 MiB: 413 (Axum's default body limit)
   - a wrong verb on a known path: empty 405
 - A foreign `Host` on any route (not `localhost`, `127.0.0.1` or `[::1]`, any port) gets an empty 403 (DNS-rebinding guard); a missing Host is allowed.
 - `GET /api/nodes/{id}/graph` returns `doc: ""` for children; use `GET /api/nodes/{id}` for a doc. On a missing id it returns 200 with empty lists; the page's `GET /api/nodes/{id}` supplies the 404.
 - `frontend/src/lib/services/api.ts` `req()` handles both error shapes.
 
 ## Add an endpoint
-A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route in `backend/src/routes/<resource>.rs`, and one line in `frontend/src/lib/services/api.ts`; a new table or column is one migration per engine.
+A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route in `backend/src/routes/<resource>.rs`, and one line in `frontend/src/lib/services/api.ts`. A new resource also needs `pub(crate) mod x;` in `services/mod.rs` and `mod x;` plus `.merge(x::router())` in `routes/mod.rs`; a new table or column is one migration per engine.
 
 ## UI
 `frontend/src/` follows the SvelteKit idiom without SvelteKit (`$lib` alias in vite and tsconfig). `App.svelte` is the hand router: `/` → `routes/+page.svelte`, `/node/:id` → `routes/node/[id]/+page.svelte`, both inside `routes/+layout.svelte`; `/node/1` redirects to `/` because systems are the children of root 1 and the root is never shown.
@@ -73,8 +74,9 @@ A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route
 | `routes/` | the layout (the one navbar, fed by the shell store) and one file per page; a page composes widgets and sets its navbar chrome in the shell store, owns nothing reusable | widgets, components, stores |
 | `lib/components/` | presentational: props in, callbacks out, scoped `<style>`; no store or service imports | components, utils |
 | `lib/widgets/` | composites wired to state: read stores, call services, compose components (NodeFlow, SystemGrid, `inspector/*`) | everything below |
-| `lib/services/` | data access and domain operations, plain TS, no runes (`api`, `nodes`, `systems`) | `api.ts` |
-| `lib/stores/` | reactive state as `.svelte.ts`: `router`, `theme`, `notify`, `shell`, and per node page `LevelState` (data, selection, mutations; provided via context) over `NodeData` | services, utils |
+| `lib/services/` | the central event listener: `api.ts` (HTTP), one handler module per resource (`nodes`, `edges`, `items`, `systems`) plus `nav`, `ui` and `telemetry`, registered by `listen.ts` from `main.ts`; the only code that calls the API, `navigate()` or `toggleTheme()` (lint-enforced) | `api.ts`, stores, events |
+| `lib/stores/` | reactive state as `.svelte.ts`: `data` (the one read path: a cache of nodes, graphs and systems; a miss emits `get:*`), `router`, `theme`, `notify`, `shell`, and per node page `LevelState` (selection, popover; provided via context) | events, utils |
+| `lib/events/` | `bus.ts` (the typed request/response bus: `on`, `emit`, `tap`) and `types.ts` (the event contract) | nothing |
 | `lib/utils/` | pure helpers and the form helpers | nothing |
 | `lib/styles/` | `tokens.css` (the two palettes), `base.css` (reset, element defaults, the closed set of utilities), `xyflow.css` (library overrides): the only global CSS | |
 
@@ -82,7 +84,7 @@ Data flow: the UI reads only `data.node(id)`, `data.graph(id)`, `data.systems()`
 
 Rules: no inline `<svg>` outside `Icon.svelte`; navigation is a plain `<a href>` or a `nav:*` event, never `navigate()` outside `lib/services` (lint-enforced); forms use `submitGuard`, `escape` and `focus`; mutation handlers clear the banner first and set it on failure, get handlers only set a per-key status in `data`; `:global` only for xyflow internals and rendered markdown.
 ## Rules
-- Runtime `sqlx::query_as` only, never `query!` macros (no `DATABASE_URL` at build, no `.sqlx/`).
+- Runtime `sqlx::query`/`query_as` only, never `query!` macros (no `DATABASE_URL` at build, no `.sqlx/`).
 - The schema is the validator: CHECK and FK constraints, mapped to 400. No hand-written validators.
 - A committed migration is never edited (every database stores its checksum); a schema change is a new version in every `migrations/<engine>/`.
 - Never disable SQLite foreign keys; cascades silently stop working.

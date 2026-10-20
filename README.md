@@ -13,7 +13,7 @@ cd ../backend && cargo run --release
 ```
 Then open http://localhost:3000.
 
-**Seed:** run the backend once, then `sqlite3 backend/knotbase.db < backend/seed.sql`. It seeds an empty DB once; a second run fails and changes nothing. **Reset:** `rm backend/knotbase.db*`. Postgres: `psql -1 -v ON_ERROR_STOP=1 -d knotbase -f backend/seed.postgres.sql`; reset with `dropdb knotbase`.
+**Seed:** run the backend once, then `sqlite3 backend/knotbase.db < backend/seed.sql`. It seeds an empty DB once; a second run fails and changes nothing. **Reset:** `rm backend/knotbase.db*`. Postgres: run the backend once (it creates the tables), then `psql -1 -v ON_ERROR_STOP=1 -d knotbase -f backend/seed.postgres.sql`; reset with `dropdb knotbase && createdb knotbase`.
 
 **Env vars** (defaults are absolute paths baked in at compile time from the repo location):
 - `STATIC_DIR`: built UI to serve. Default `<repo>/frontend/dist`.

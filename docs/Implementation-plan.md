@@ -1,6 +1,6 @@
 # knotbase — Implementation Plan (v2: recursive model, Svelte 5)
 
-> **Status: built and verified.** Written before the code. Where it disagrees with backend/ and frontend/, the code wins; CLAUDE.md is the current summary. Known drifts: `req()` in `api.ts` (unwraps `{"error"}`), `NodePage` `reload()`/`act()` (sequence guard, refetch on failure, sequential multi-delete, one reload per drag), the seed (`.bail on` plus a transaction), `backend/src/tests.rs` (`send()` helper, many more tests), `app(pool, dist)` with a Host guard, `/graph` returns `doc` `""`, PATCH rejects unknown fields, `CardNode` has an open link.
+> **Status: built and verified.** Written before the code. Where it disagrees with backend/ and frontend/, the code wins; CLAUDE.md is the current summary. Known drifts: `req()` in `api.ts` (unwraps `{"error"}`), `NodePage` `reload()`/`act()` (sequence guard, refetch on failure, sequential multi-delete, one reload per drag), the seed (`.bail on` plus a transaction), `backend/tests/api/` (`send()` helper, many more tests), the backend layout (`lib.rs`, `src/routes/`, `src/services/`, `src/config.rs`, `migrations/<engine>/`, `Db` over SQLite or Postgres instead of `SqlitePool`; see CLAUDE.md ", `app(pool, dist)` with a Host guard, `/graph` returns `doc` `""`, PATCH rejects unknown fields, `CardNode` has an open link.
 
 ## Context
 
