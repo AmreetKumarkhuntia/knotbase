@@ -1,62 +1,8 @@
 use crate::{
     error::{AppError, Result},
-    services::{
-        db::{Db, sql},
-        edges::Edge,
-        items::Item,
-    },
+    services::db::{Db, sql},
+    types::nodes::{Graph, NewNode, Node, NodeDetail, NodePatch},
 };
-use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
-
-#[derive(FromRow, Serialize)]
-pub struct Node {
-    id: i64,
-    parent_id: Option<i64>,
-    name: String,
-    kind: String,
-    doc: String,
-    x: f64,
-    y: f64,
-    created_at: String,
-    updated_at: String,
-}
-#[derive(FromRow, Serialize)]
-pub struct Crumb {
-    id: i64,
-    name: String,
-}
-#[derive(Serialize)]
-pub struct Graph {
-    nodes: Vec<Node>,
-    edges: Vec<Edge>,
-}
-#[derive(Serialize)]
-pub struct NodeDetail {
-    #[serde(flatten)]
-    node: Node,
-    items: Vec<Item>,
-    breadcrumb: Vec<Crumb>,
-}
-#[derive(Deserialize)]
-pub struct NewNode {
-    parent_id: i64,
-    name: String,
-    kind: String,
-    #[serde(default)]
-    x: f64,
-    #[serde(default)]
-    y: f64,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct NodePatch {
-    name: Option<String>,
-    kind: Option<String>,
-    doc: Option<String>,
-    x: Option<f64>,
-    y: Option<f64>,
-}
 
 // shortcut: a missing id returns 200 with empty lists (the frontend's node fetch supplies the 404); add an existence check if graph is ever called alone.
 pub async fn graph(db: &Db, id: i64) -> Result<Graph> {
@@ -85,7 +31,7 @@ pub async fn get(db: &Db, id: i64) -> Result<NodeDetail> {
     .bind(id)
     .fetch_one(pool)
     .await)?;
-    // shortcut: items are id order; add a position column (one migration per engine) when drag-reorder is wanted.|target_id) have no index; cascade deletes scan both tables (2.3 s at ~11k nodes vs 13 ms indexed), add a migration with those three indexes at ~10k rows, and an INTEGER position column when drag-reorder is wanted.
+    // shortcut: items are id order; add an INTEGER position column (one migration per engine) when drag-reorder is wanted.
     let items = sql!(db, |pool| sqlx::query_as(
         "SELECT * FROM item WHERE node_id = $1 ORDER BY id"
     )

@@ -1,30 +1,8 @@
 use crate::{
     error::Result,
     services::db::{Db, sql},
+    types::items::{Item, ItemPatch, NewItem},
 };
-use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
-
-#[derive(FromRow, Serialize)]
-pub struct Item {
-    id: i64,
-    node_id: i64,
-    text: String,
-    done: bool,
-    created_at: String,
-    updated_at: String,
-}
-#[derive(Deserialize)]
-pub struct NewItem {
-    node_id: i64,
-    text: String,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ItemPatch {
-    text: Option<String>,
-    done: Option<bool>,
-}
 
 pub async fn create(db: &Db, b: NewItem) -> Result<Item> {
     Ok(sql!(db, |pool| sqlx::query_as(

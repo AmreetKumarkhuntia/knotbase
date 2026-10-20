@@ -23,13 +23,14 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 
 | Folder | Holds | May import |
 |---|---|---|
-| `src/routes/` | Axum: `app()` (the `/api` router, the static UI, the host guard) and one file per resource with its `router()` and thin handlers: extract, call a service, answer with a status and `Json` | services, db, error |
-| `src/services/` | one file per resource: the row structs (they are the API bodies too) and `pub async fn`s over `&Db`; the only SQL in the crate | db, error, sibling services |
+| `src/routes/` | Axum: `app()` (the `/api` router, the static UI, the host guard) and one file per resource with its `router()` and thin handlers: extract, call a service, answer with a status and `Json` | services, types, db, error |
+| `src/services/` | one file per resource: `pub async fn`s over `&Db` that take and return the structs in `types/`; the only SQL in the crate | db, error, types, sibling services |
 | `src/services/db.rs` | the one database interface: `enum Db`, a variant per engine with its native pool; `connect(url, max)` picks the variant from the URL scheme and runs that engine's `migrations/<engine>/`; `with_now()` and the `sql!` macro | sqlx |
+| `src/types/` | one file per resource: the structs with their serde and sqlx derives, the rows as read and the API bodies as sent or taken; no functions | serde, sqlx derives |
 | `src/config.rs` | `Config::from_env()`: every environment variable the binary reads, with its default; the only place `std::env` is read | |
 | `migrations/<engine>/` | the same schema per engine, same version numbers (`sqlite/`, `postgres/`) | |
 
-Portable SQL: a service runs one sqlx expression through `sql!(db, |pool| …)`, which expands once per engine, so the SQL text must work on every engine: `$n` placeholders, `RETURNING`, `COALESCE`, `WITH RECURSIVE`, `{now}` through `db.with_now()` for the current time, nothing else engine-specific; the expression (a chain, or a block with a transaction) ends in a row struct, a scalar or `()`, never a driver row. The Postgres test run is the lint. Engine traps: booleans in SQL text (bind a `bool` or write bare `WHERE done`, never `= 1`; count with `COUNT(*) FILTER (WHERE done)`, never `SUM`), `COALESCE($n, col)` can never set a column back to NULL (keep columns `NOT NULL` with a default), and the `graph` query names the node columns, so a new column goes there too. Adding an engine: its sqlx feature, a `Db` variant, an arm in `connect()`, `now()` and `sql!`, and a migrations directory; services stay untouched.
+Portable SQL: a service runs one sqlx expression through `sql!(db, |pool| …)`, which expands once per engine, so the SQL text must work on every engine: `$n` placeholders, `RETURNING`, `COALESCE`, `WITH RECURSIVE`, `{now}` through `db.with_now()` for the current time, nothing else engine-specific; the expression (a chain, or a block with a transaction) ends in a row struct, a scalar or `()`, never a driver row. The Postgres test run is the lint. Engine traps: booleans in SQL text (bind a `bool` or write bare `WHERE done`, never `= 1`; count with `COUNT(*) FILTER (WHERE done)`, never `SUM`), `COALESCE($n, col)` can never set a column back to NULL (keep columns `NOT NULL` with a default), and the `graph` query names the node columns, so a new column goes there and on the `Node` struct in `types/nodes.rs` too. Adding an engine: its sqlx feature, a `Db` variant, an arm in `connect()`, `now()` and `sql!`, and a migrations directory; services stay untouched.
 
 ## Data model
 - `node`: recursive table, id 1 is the root "System", every other node has a `parent_id`. Carries `doc` (markdown) and x/y.
@@ -64,7 +65,7 @@ Portable SQL: a service runs one sqlx expression through `sql!(db, |pool| …)`,
 - `frontend/src/lib/services/api.ts` `req()` handles both error shapes.
 
 ## Add an endpoint
-A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route in `backend/src/routes/<resource>.rs`, and one line in `frontend/src/lib/services/api.ts`. A new resource also needs `pub(crate) mod x;` in `services/mod.rs` and `mod x;` plus `.merge(x::router())` in `routes/mod.rs`; a new table or column is one migration per engine.
+A `pub async fn` in `backend/src/services/<resource>.rs`, a handler plus a route in `backend/src/routes/<resource>.rs`, and one line in `frontend/src/lib/services/api.ts`. A new resource also needs its structs in `types/x.rs` with `pub mod x;` in `types/mod.rs`, `pub(crate) mod x;` in `services/mod.rs` and `mod x;` plus `.merge(x::router())` in `routes/mod.rs`; a new table or column is one migration per engine and a field on the struct.
 
 ## UI
 `frontend/src/` follows the SvelteKit idiom without SvelteKit (`$lib` alias in vite and tsconfig). `App.svelte` is the hand router: `/` → `routes/+page.svelte`, `/node/:id` → `routes/node/[id]/+page.svelte`, both inside `routes/+layout.svelte`; `/node/1` redirects to `/` because systems are the children of root 1 and the root is never shown.

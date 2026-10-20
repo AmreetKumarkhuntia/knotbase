@@ -1,33 +1,8 @@
 use crate::{
     error::Result,
     services::db::{Db, sql},
+    types::edges::{Edge, EdgePatch, NewEdge},
 };
-use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
-
-#[derive(FromRow, Serialize)]
-pub struct Edge {
-    id: i64,
-    parent_id: i64,
-    source_id: i64,
-    target_id: i64,
-    label: String,
-    created_at: String,
-    updated_at: String,
-}
-#[derive(Deserialize)]
-pub struct NewEdge {
-    parent_id: i64,
-    source_id: i64,
-    target_id: i64,
-    #[serde(default)]
-    label: String,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct EdgePatch {
-    label: Option<String>,
-}
 
 pub async fn create(db: &Db, b: NewEdge) -> Result<Edge> {
     Ok(sql!(db, |pool| {

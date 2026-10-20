@@ -1,4 +1,4 @@
-// Domain operations over the one Db (db.rs), and the row structs that double as API bodies. The only SQL in the crate.
+// Domain operations over the one Db (db.rs) on the structs in types/. The only SQL in the crate.
 pub mod db;
 pub(crate) mod edges;
 pub(crate) mod items;

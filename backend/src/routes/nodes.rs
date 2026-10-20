@@ -1,9 +1,7 @@
 use crate::{
     error::Result,
-    services::{
-        db::Db,
-        nodes::{self, Graph, NewNode, Node, NodeDetail, NodePatch},
-    },
+    services::{db::Db, nodes},
+    types::nodes::{Graph, NewNode, Node, NodeDetail, NodePatch},
 };
 use axum::{
     Json, Router,
