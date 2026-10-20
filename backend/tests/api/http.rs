@@ -88,3 +88,72 @@ async fn deep_link_gets_index_html_with_200() {
     );
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+// Axum's extractor rejections, as CLAUDE.md documents them (plain text, not {"error"} JSON).
+#[tokio::test]
+async fn extractor_rejections_match_the_contract() {
+    let app = app().await;
+    for (method, uri, content_type, body, want) in [
+        (
+            "POST",
+            "/api/nodes",
+            "application/json",
+            "{not json",
+            StatusCode::BAD_REQUEST,
+        ),
+        (
+            "POST",
+            "/api/nodes",
+            "text/plain",
+            "{}",
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        ),
+        (
+            "GET",
+            "/api/nodes/abc",
+            "application/json",
+            "",
+            StatusCode::BAD_REQUEST,
+        ),
+        (
+            "PUT",
+            "/api/nodes/1",
+            "application/json",
+            "",
+            StatusCode::METHOD_NOT_ALLOWED,
+        ),
+    ] {
+        let req = Request::builder()
+            .method(method)
+            .uri(uri)
+            .header("content-type", content_type)
+            .body(Body::from(body))
+            .unwrap();
+        let res = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(res.status(), want, "{method} {uri}");
+    }
+}
+
+// A NUL byte is bad input on Postgres (400, SQLSTATE 22021) and stored as-is by SQLite (201); on neither is it a 500.
+#[tokio::test]
+async fn nul_in_text_is_never_500() {
+    let app = app().await;
+    let body = json!({"parent_id":1,"name":"a\u{0}b","kind":"k"});
+    let (status, v) = send(&app, "POST", "/api/nodes", Some(body)).await;
+    assert!(
+        matches!(status, StatusCode::CREATED | StatusCode::BAD_REQUEST),
+        "{status} {v}"
+    );
+}
+
+// DATABASE_URL must name an engine; anything else would be opened as a SQLite file name (an empty URL as a temporary database).
+#[tokio::test]
+async fn unknown_database_url_scheme_is_refused() {
+    for url in ["", "mysql://u@h/db", "knotbase.db"] {
+        let err = knotbase::services::db::Db::connect(url, 1).await.err();
+        assert!(
+            err.is_some_and(|e| e.to_string().contains("sqlite: or postgres:")),
+            "{url:?}"
+        );
+    }
+}

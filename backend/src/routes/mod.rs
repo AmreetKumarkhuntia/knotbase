@@ -31,6 +31,7 @@ async fn loopback_host(req: Request, next: Next) -> Response {
 }
 
 // The whole app: /api from the resource routers, everything else the built UI with index.html for deep links.
+// shortcut: axum extractor rejections are plain text, not {"error"} (malformed JSON 400, missing/mistyped field 422, wrong content-type 415, /api/nodes/abc 400, wrong verb on a known path empty 405, body over 2 MiB 413); wrap Json/Path in a FromRequest that maps to AppError when a client must parse them.
 pub fn app(db: Db, dist: &str) -> Router {
     let index = format!("{dist}/index.html");
     if !std::path::Path::new(&index).exists() {
@@ -42,7 +43,7 @@ pub fn app(db: Db, dist: &str) -> Router {
         .merge(nodes::router())
         .merge(edges::router())
         .merge(items::router())
-        .fallback(|| async { AppError::NotFound }); // unknown /api/* stays JSON 404, not index.html
+        .fallback(|| async { AppError::NotFound }); // unknown /api/* stays JSON 404, not index.html (only the bare `/api/` falls through to the UI)
     Router::new()
         .nest("/api", api)
         .fallback_service(ServeDir::new(dist).fallback(ServeFile::new(index)))

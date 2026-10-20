@@ -62,6 +62,18 @@ async fn patch_node_is_partial() {
         (&v["x"], &v["doc"], &v["y"]),
         (&json!(0.0), &json!(""), &json!(6.0))
     );
+    // both engines write the same ISO text, and a PATCH moves updated_at
+    let (created, updated) = (
+        v["created_at"].as_str().unwrap(),
+        v["updated_at"].as_str().unwrap(),
+    );
+    assert!(
+        updated.len() == 24
+            && updated.ends_with('Z')
+            && &updated[10..11] == "T"
+            && updated >= created,
+        "{created} {updated}"
+    );
 }
 
 // Deleting a node removes its whole subtree: children, their edges and items.

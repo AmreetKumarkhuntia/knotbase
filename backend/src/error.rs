@@ -5,7 +5,6 @@ use axum::{
 };
 use serde_json::json;
 
-// shortcut: axum extractor rejections are plain text, not {"error"} (malformed JSON 400, missing/mistyped field 422, wrong content-type 415, /api/nodes/abc 400, wrong verb on a known path empty 405); wrap Json/Path in a FromRequest that maps to AppError when a client must parse them.
 pub enum AppError {
     BadRequest(String),
     NotFound,
@@ -17,8 +16,12 @@ impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
         match e {
             sqlx::Error::RowNotFound => Self::NotFound,
-            // CHECK / FK / NOT NULL / UNIQUE violations: the schema is the validator
-            sqlx::Error::Database(ref d) if d.kind() != sqlx::error::ErrorKind::Other => {
+            // CHECK / FK / NOT NULL / UNIQUE violations: the schema is the validator. SQLSTATE class 22 is Postgres'
+            // "data exception" (a NUL byte in text, a value out of range); SQLite's codes are numeric and never start with 22.
+            sqlx::Error::Database(ref d)
+                if d.kind() != sqlx::error::ErrorKind::Other
+                    || d.code().is_some_and(|c| c.starts_with("22")) =>
+            {
                 Self::BadRequest(d.message().to_string())
             }
             e => Self::Internal(e),

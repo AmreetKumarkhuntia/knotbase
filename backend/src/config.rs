@@ -1,4 +1,4 @@
-// Every setting the binary takes from the environment, with its default, in one place.
+// Every setting the binary takes, from the environment or a constant, with its default, in one place.
 pub struct Config {
     pub static_dir: String,
     pub database_url: String,
@@ -16,7 +16,7 @@ impl Config {
             database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| {
                 format!("sqlite:{}/knotbase.db?mode=rwc", env!("CARGO_MANIFEST_DIR"))
             }),
-            // shortcut: loopback only, single user; read BIND here when it runs in a container
+            // shortcut: loopback only, single user; read BIND here and widen the Host allowlist in routes/mod.rs when it runs in a container
             bind: "127.0.0.1:3000".into(),
         }
     }

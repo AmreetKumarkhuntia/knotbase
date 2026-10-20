@@ -1,6 +1,6 @@
 // One test binary over the public crate: the helpers here, the tests by area in the sibling files.
-mod app;
 mod edges;
+mod http;
 mod items;
 mod nodes;
 
@@ -18,10 +18,15 @@ async fn app() -> Router {
 }
 
 async fn app_serving(dist: &str) -> Router {
-    // TEST_DATABASE_URL=postgres://… runs this suite on Postgres: one shared database, so `cargo test -- --test-threads=1`
+    // TEST_DATABASE_URL=postgres://… runs this suite on Postgres; the tests are serial (.cargo/config.toml) and share that database
     let url = std::env::var("TEST_DATABASE_URL").unwrap_or_else(|_| "sqlite::memory:".into());
-    let db = Db::connect(&url, 1).await.unwrap(); // one connection, or every checkout of an in-memory SQLite is a fresh empty DB
+    let db = Db::connect(&url, 1).await.unwrap();
     if let Db::Postgres(p) = &db {
+        // every test starts from a fresh root, so this wipes whatever the URL names: insist on a *_test database
+        assert!(
+            url.contains("_test"),
+            "TEST_DATABASE_URL must name a *_test database; it is truncated before every test"
+        );
         sqlx::raw_sql("TRUNCATE node RESTART IDENTITY CASCADE; INSERT INTO node (parent_id, name, kind) VALUES (NULL, 'System', 'root')")
             .execute(p)
             .await

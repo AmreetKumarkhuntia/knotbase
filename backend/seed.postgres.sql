@@ -13,4 +13,4 @@ Creates a Stripe PaymentIntent, then records the order.');
 INSERT INTO node (id, parent_id, name, kind, x, y) VALUES (7, 6, 'POST /checkout', 'step', 0, 100), (8, 6, 'Stripe charge', 'step', 300, 100);
 INSERT INTO edge (parent_id, source_id, target_id, label) VALUES (6, 7, 8, 'create PaymentIntent');
 INSERT INTO item (node_id, text, done) VALUES (6, 'Document the retry mechanism', false), (3, 'Add health endpoint', true);
-SELECT setval(pg_get_serial_sequence('node', 'id'), 8);  -- explicit ids above do not advance the identity
+SELECT setval(pg_get_serial_sequence('node', 'id'), (SELECT max(id) FROM node));  -- explicit ids above do not advance the identity

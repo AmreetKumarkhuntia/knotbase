@@ -1,4 +1,4 @@
 pub mod config;
-pub mod error;
+mod error;
 pub mod routes;
 pub mod services;
