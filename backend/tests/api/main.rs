@@ -18,7 +18,15 @@ async fn app() -> Router {
 }
 
 async fn app_serving(dist: &str) -> Router {
-    let db = Db::connect("sqlite::memory:", 1).await.unwrap(); // one connection, or every checkout is a fresh empty DB
+    // TEST_DATABASE_URL=postgres://… runs this suite on Postgres: one shared database, so `cargo test -- --test-threads=1`
+    let url = std::env::var("TEST_DATABASE_URL").unwrap_or_else(|_| "sqlite::memory:".into());
+    let db = Db::connect(&url, 1).await.unwrap(); // one connection, or every checkout of an in-memory SQLite is a fresh empty DB
+    if let Db::Postgres(p) = &db {
+        sqlx::raw_sql("TRUNCATE node RESTART IDENTITY CASCADE; INSERT INTO node (parent_id, name, kind) VALUES (NULL, 'System', 'root')")
+            .execute(p)
+            .await
+            .unwrap();
+    }
     knotbase::routes::app(db, dist)
 }
 

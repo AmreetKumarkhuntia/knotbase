@@ -52,6 +52,7 @@ pub async fn delete(db: &Db, id: i64) -> Result<()> {
     sql!(db, p => sqlx::query("DELETE FROM item WHERE id = $1 RETURNING id")
         .bind(id)
         .fetch_one(p)
-        .await)?; // no row -> RowNotFound -> 404
+        .await
+        .map(|_| ()))?; // no row -> RowNotFound -> 404; the raw row differs per engine, so drop it inside the arm
     Ok(())
 }

@@ -14,7 +14,8 @@ async fn edge_across_levels_is_400() {
         let edge = json!({"parent_id":1,"source_id":source_id,"target_id":target_id});
         let (status, v) = send(&app, "POST", "/api/edges", Some(edge)).await;
         assert_eq!(status, StatusCode::BAD_REQUEST, "{source_id}->{target_id}");
-        assert_eq!(v["error"], "FOREIGN KEY constraint failed");
+        let msg = v["error"].as_str().unwrap().to_lowercase(); // SQLite: "FOREIGN KEY constraint failed"; Postgres names the constraint
+        assert!(msg.contains("foreign key"), "{msg}");
     }
 }
 
