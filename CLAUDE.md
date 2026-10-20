@@ -91,6 +91,14 @@ Rules: no inline `<svg>` outside `Icon.svelte`; navigation is a plain `<a href>`
 - A committed migration is never edited (every database stores its checksum); a schema change is a new version in every `migrations/<engine>/`.
 - Never disable SQLite foreign keys; cascades silently stop working.
 - TypeScript stays on 6.x: `svelte-check` does not support 7.
+- Never the sqlx `any` driver: its SQLite type map has no Bool, so `item.done` cannot decode. An engine is a `Db` variant over its native pool.
+- SQL text is a `&'static str` literal (sqlx 0.9 `SqlSafeStr`); the one built string is `db.with_now()`. No `format!`ed SQL.
+- `backend/build.rs` stays: `sqlx::migrate!` embeds `migrations/` at compile time and only its `rerun-if-changed` makes cargo notice a new migration file.
+- Every setting the binary reads goes through `Config::from_env()`; no port, path or pool-size literal elsewhere. `PORT` is read by the Vite proxy too, so renaming it touches `vite.config.ts`.
+- Structs live in `backend/src/types/` and `frontend/src/lib/types/index.ts` and hold no functions; a body change is made in both, field for field, and the API tests assert the JSON.
+- Errors are mapped in `error.rs` only: `RowNotFound` 404; a database error with a known kind, or SQLSTATE class 22 (Postgres data exception, e.g. a NUL byte), 400 with the engine message; anything else 500. A new engine's codes go there, never in a handler.
+- Tests never touch an existing database: SQLite in memory, Postgres a fresh `knotbase_test_<module>__<test>` per test; never a TRUNCATE or a shared database. Keep test names short: that name must stay under Postgres's 63-character identifier limit.
+- `seed.postgres.sql` inserts explicit ids, so it ends with `setval` on the node sequence; keep that line, or the first INSERT after seeding collides.
 - Ponytail mode: smallest complete change. Mark known limits in code as `shortcut: <limit>, <when to upgrade>`.
 
 ## Commits
