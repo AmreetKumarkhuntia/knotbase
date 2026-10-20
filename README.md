@@ -15,8 +15,9 @@ Then open http://localhost:3000.
 
 **Seed:** run the backend once, then `sqlite3 backend/knotbase.db < backend/seed.sql`. It seeds an empty DB once; a second run fails and changes nothing. **Reset:** `rm backend/knotbase.db*`. Postgres: run the backend once (it creates the tables), then `psql -1 -v ON_ERROR_STOP=1 -d knotbase -f backend/seed.postgres.sql`; reset with `dropdb knotbase && createdb knotbase`.
 
-**Env vars** (defaults are absolute paths baked in at compile time from the repo location):
+**Env vars** (the path defaults are absolute, baked in at compile time from the repo location):
 - `STATIC_DIR`: built UI to serve. Default `<repo>/frontend/dist`.
 - `DATABASE_URL`: which database, by URL scheme. Default `sqlite:<repo>/backend/knotbase.db?mode=rwc`. For Postgres: `createdb knotbase`, then `DATABASE_URL=postgres://$USER@localhost/knotbase` (name the user in the URL; sqlx does not take the OS user).
+- `PORT`: the backend listens on 127.0.0.1 at this port, default 3000. The Vite dev proxy reads it too, so `PORT=3100 npm start` moves both.
 
 Values you set yourself are used as written (relative to the working directory, i.e. backend/ under cargo run); use absolute paths and keep ?mode=rwc so a new DB file is created. Seeding needs the sqlite3 CLI.

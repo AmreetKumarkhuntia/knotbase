@@ -9,13 +9,13 @@ Graph-first system explorer: a tree of nodes, each with a child graph, markdown 
 
 ## Run, test, build
 - Setup (once): `cd frontend && npm ci`
-- Dev: `npm start` from the repo root, same as `./dev.sh` (Vite :5025 proxies `/api` to Rust :3000), open http://localhost:5025.
+- Dev: `npm start` from the repo root, same as `./dev.sh` (Vite :5025 proxies `/api` to Rust :3000), open http://localhost:5025. `PORT=3100 npm start` moves the Rust port and the proxy together.
 - Backend (in `backend/`): `cargo run`, `cargo test`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
 - Backend on Postgres: `createdb knotbase` once, then `DATABASE_URL=postgres://$USER@localhost/knotbase cargo run`. Tests on Postgres: `TEST_DATABASE_URL=postgres://$USER@localhost/postgres cargo test` (the login needs CREATEDB; every test creates its own `knotbase_test_<test name>` database and leaves it for the next run to recreate, and the database named in the URL is never written; CI runs the suite on both engines).
 - Frontend (in `frontend/`): `npm run dev`, `npm run lint` (Prettier check then ESLint; CI runs it), `npm run format` (Prettier write), `npm run build` (`svelte-check` then `vite build`; CI runs it). `npm run check` also type-checks `vite.config.ts`, which CI does not.
 - Prod: `cd frontend && npm run build`, then `cd backend && cargo run --release`, open http://localhost:3000.
 - Seed: `sqlite3 backend/knotbase.db < backend/seed.sql` after one backend run, on an empty DB (all-or-nothing; a rerun fails cleanly). Reset: `rm backend/knotbase.db*`. Postgres: run the backend once (it creates the tables), then `psql -1 -v ON_ERROR_STOP=1 -d knotbase -f backend/seed.postgres.sql`; reset: `dropdb knotbase && createdb knotbase`.
-- Env (read in `backend/src/config.rs`): `STATIC_DIR` (default `<repo>/frontend/dist`) and `DATABASE_URL` (default `sqlite:<repo>/backend/knotbase.db?mode=rwc`). The URL scheme picks the engine: `sqlite:` (without `?mode=rwc` a missing file is not created) or `postgres://user@host/db` (the database must exist; sqlx does not take the OS user, so name one in the URL or set `PGUSER`). Both defaults are absolute (baked from `CARGO_MANIFEST_DIR`); a value you set is used as written, relative to the working directory (`backend/` under `cargo run`), so prefer absolute paths.
+- Env (read in `backend/src/config.rs`): `PORT` (default 3000; the backend listens on 127.0.0.1 only, and the Vite proxy reads the same variable), `STATIC_DIR` (default `<repo>/frontend/dist`) and `DATABASE_URL` (default `sqlite:<repo>/backend/knotbase.db?mode=rwc`). The URL scheme picks the engine: `sqlite:` (without `?mode=rwc` a missing file is not created) or `postgres://user@host/db` (the database must exist; sqlx does not take the OS user, so name one in the URL or set `PGUSER`). The two path defaults are absolute (baked from `CARGO_MANIFEST_DIR`); a value you set is used as written, relative to the working directory (`backend/` under `cargo run`), so prefer absolute paths.
 - `.playwright-mcp/` at the repo root is output from browser tools; it is gitignored, so never committed.
 
 ## Backend
