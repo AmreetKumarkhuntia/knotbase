@@ -2,7 +2,7 @@ mod edges;
 mod items;
 mod nodes;
 
-use crate::{db::Db, error::AppError};
+use crate::{error::AppError, services::db::Db};
 use axum::{
     Router,
     extract::Request,

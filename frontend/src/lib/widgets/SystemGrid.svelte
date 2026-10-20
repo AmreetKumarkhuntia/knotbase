@@ -1,18 +1,14 @@
 <script lang="ts">
   import { bus } from '$lib/events/bus'
   import { data } from '$lib/stores/data.svelte'
-  import type { System } from '$lib/events/types'
   import SystemCard from '$lib/components/SystemCard.svelte'
   import NewSystemForm from '$lib/components/NewSystemForm.svelte'
   import Icon from '$lib/components/Icon.svelte'
 
   // The systems grid with its New system form; `adding` is bindable so the navbar action can open the form.
-  let { adding = $bindable(false), onLoad }: { adding?: boolean; onLoad?: (systems: System[]) => void } = $props()
+  let { adding = $bindable(false) }: { adding?: boolean } = $props()
   const systems = $derived(data.systems())
   const status = $derived(data.status('systems'))
-  $effect(() => {
-    if (systems) onLoad?.(systems)
-  })
 
   async function create(name: string, desc: string) {
     const id = await bus.emit('post:system', { name, desc })

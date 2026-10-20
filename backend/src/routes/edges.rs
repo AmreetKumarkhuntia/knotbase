@@ -1,7 +1,9 @@
 use crate::{
-    db::Db,
     error::Result,
-    services::edges::{self, Edge, EdgePatch, NewEdge},
+    services::{
+        db::Db,
+        edges::{self, Edge, EdgePatch, NewEdge},
+    },
 };
 use axum::{
     Json, Router,

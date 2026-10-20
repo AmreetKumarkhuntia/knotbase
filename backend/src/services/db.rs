@@ -54,8 +54,8 @@ impl Db {
 macro_rules! sql {
     ($db:expr, $p:ident => $q:expr) => {
         match $db {
-            $crate::db::Db::Sqlite($p) => $q,
-            $crate::db::Db::Postgres($p) => $q,
+            $crate::services::db::Db::Sqlite($p) => $q,
+            $crate::services::db::Db::Postgres($p) => $q,
         }
     };
 }

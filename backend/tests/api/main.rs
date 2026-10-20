@@ -9,7 +9,7 @@ use axum::{
     body::{Body, to_bytes},
     http::{Request, StatusCode},
 };
-use knotbase::db::Db;
+use knotbase::services::db::Db;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 

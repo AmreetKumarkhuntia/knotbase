@@ -1,6 +1,6 @@
 use crate::{
-    db::{Db, sql},
     error::Result,
+    services::db::{Db, sql},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;

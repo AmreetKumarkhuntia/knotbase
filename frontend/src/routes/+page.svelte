@@ -1,11 +1,12 @@
 <script lang="ts">
   import SystemGrid from '$lib/widgets/SystemGrid.svelte'
+  import { data } from '$lib/stores/data.svelte'
   import { shell } from '$lib/stores/shell.svelte'
   import { notify } from '$lib/stores/notify.svelte'
   import { plural } from '$lib/utils/format'
 
   let adding = $state(false)
-  let count = $state<number>()
+  const count = $derived(data.systems()?.length)
   notify.error = '' // a banner from the previous page is not about this one
   $effect(() => {
     shell.crumbs = undefined
@@ -22,7 +23,7 @@
       <h1 id="systems-h">Systems</h1>
       <p class="muted">Independent maps. Each one has its own graph, docs and items.</p>
     </div>
-    <SystemGrid bind:adding onLoad={(s) => (count = s.length)} />
+    <SystemGrid bind:adding />
   </section>
 </main>
 

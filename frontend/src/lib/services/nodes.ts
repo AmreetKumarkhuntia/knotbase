@@ -1,11 +1,15 @@
 import { bus } from '$lib/events/bus'
-import { data } from '$lib/stores/data.svelte'
+import { data, type Key } from '$lib/stores/data.svelte'
 import { act } from '$lib/stores/notify.svelte'
 import { api, type ApiNode } from './api'
 
-// the keys a change under `parent` shows up in: its graph, and the Home grid when the parent is the root
-const under = (parent: number | null) =>
-  parent == null ? [] : parent === 1 ? ([`graph:${parent}`, 'systems'] as const) : ([`graph:${parent}`] as const)
+// the keys a change under `parent` shows up in: its graph, and Home when the parent is the root or a system (a card shows its top level)
+const under = (parent: number | null): Key[] =>
+  parent == null
+    ? []
+    : parent === 1 || data.peekSystems()?.some((s) => s.node.id === parent)
+      ? [`graph:${parent}`, 'systems']
+      : [`graph:${parent}`]
 
 export function register() {
   bus.on('get:node', async ({ id }) => data.setNode(id, await api.node(id)))
@@ -26,7 +30,9 @@ export function register() {
   bus.on('patch:node', async ({ id, patch }) => {
     let parent: number | null = null
     const ok = await act(api.updateNode(id, patch).then((n) => (parent = n.parent_id)))
-    await data.refresh(`node:${id}`, ...under(parent))
+    // a rename reaches the breadcrumb of every cached node below it
+    const crumbs: Key[] = 'name' in patch ? data.below(id).map((d) => `node:${d}` as const) : []
+    await data.refresh(`node:${id}`, ...under(parent), ...crumbs)
     return ok
   })
   bus.on('patch:nodes', async ({ parent_id, moves }) => {
@@ -37,7 +43,7 @@ export function register() {
   bus.on('delete:node', async ({ id, parent_id }) => {
     const ok = await act(api.deleteNode(id))
     await data.refresh(...under(parent_id))
-    if (ok) data.drop(id) // after the refresh: until the graph no longer lists it, its inspector would refetch a node that is gone
+    if (ok) [id, ...data.below(id)].forEach(data.drop) // after the refresh: until the graph no longer lists it, its inspector would refetch a node that is gone
     return ok
   })
   // shortcut: one request per item, not atomic; it stops at the first failure, add a batch endpoint when partial failure matters.
@@ -49,7 +55,7 @@ export function register() {
       })(),
     )
     await data.refresh(...under(parent_id))
-    nodeIds.forEach(data.drop)
+    nodeIds.forEach((n) => [n, ...data.below(n)].forEach(data.drop))
     return ok
   })
 }

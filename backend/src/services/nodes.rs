@@ -1,7 +1,10 @@
 use crate::{
-    db::{Db, sql},
     error::{AppError, Result},
-    services::{edges::Edge, items::Item},
+    services::{
+        db::{Db, sql},
+        edges::Edge,
+        items::Item,
+    },
 };
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;

@@ -14,7 +14,7 @@ const status = new SvelteMap<string, 'loading' | { error: string }>()
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- bookkeeping only, nothing renders from it
 const inflight = new Map<string, Promise<void>>()
 
-type Key = `node:${number}` | `graph:${number}` | 'systems'
+export type Key = `node:${number}` | `graph:${number}` | 'systems'
 
 const getFor = (key: Key) => {
   const [kind, id] = key.split(':')
@@ -79,6 +79,10 @@ export const data = {
   status: (key: Key) => status.get(key),
   // a read that never schedules a fetch, for handlers that only want what is already here
   peekGraph: (id: number) => graphs.get(id),
+  peekSystems: () => systemList,
+  // cached nodes under `id` (their breadcrumb runs through it): a rename or a delete of `id` reaches them too
+  below: (id: number) =>
+    [...nodes].filter(([k, n]) => k !== id && n.breadcrumb.some((b) => b.id === id)).map(([k]) => k),
 
   // written by the get handlers only
   setNode: (id: number, v: NodeDetail) => {
